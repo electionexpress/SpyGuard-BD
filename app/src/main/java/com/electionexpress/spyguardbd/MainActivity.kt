@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.delay
 
 private val Bg = Color(0xFF07110F)
 private val Panel = Color(0xFF12201C)
@@ -65,7 +66,7 @@ private fun SpyGuardApp() {
     var wifiState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
     var wifiNetworks by remember { mutableStateOf<List<String>>(emptyList()) }
     var bleState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
-    var bleDevices by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    val bleDevices = remember { mutableStateMapOf<String, String>() }
     var isBleScanning by remember { mutableStateOf(false) }
     var showIrGuide by remember { mutableStateOf(false) }
 
@@ -131,13 +132,22 @@ private fun SpyGuardApp() {
                 val label = try {
                     result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
                 } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
-                bleDevices = bleDevices + (address to "$label • ${result.rssi} dBm")
+                bleDevices[address] = "$label • ${result.rssi} dBm"
                 bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
             }
             override fun onScanFailed(errorCode: Int) {
                 isBleScanning = false
                 bleState = "Bluetooth স্ক্যান ব্যর্থ (কোড $errorCode)"
             }
+        }
+    }
+
+    LaunchedEffect(isBleScanning) {
+        if (isBleScanning) {
+            delay(15_000)
+            try { bluetoothAdapter?.bluetoothLeScanner?.stopScan(bleCallback) } catch (_: SecurityException) {}
+            isBleScanning = false
+            bleState = "১৫ সেকেন্ডের স্ক্যান সম্পন্ন — ${bleDevices.size}টি ডিভাইস পাওয়া গেছে"
         }
     }
 
@@ -220,10 +230,15 @@ private fun SpyGuardApp() {
                                         bleState = "Bluetooth চালু করুন"
                                     } else {
                                         try {
-                                            bleDevices = emptyMap()
-                                            bluetoothAdapter.bluetoothLeScanner?.startScan(bleCallback)
-                                            isBleScanning = true
-                                            bleState = "স্ক্যান চলছে — ১৫ সেকেন্ড পরে বন্ধ করুন"
+                                            val scanner = bluetoothAdapter.bluetoothLeScanner
+                                            if (scanner == null) {
+                                                bleState = "এই ডিভাইসে Bluetooth LE scanner পাওয়া যায়নি"
+                                            } else {
+                                                bleDevices.clear()
+                                                scanner.startScan(bleCallback)
+                                                isBleScanning = true
+                                                bleState = "স্ক্যান চলছে — ১৫ সেকেন্ড পরে স্বয়ংক্রিয়ভাবে বন্ধ হবে"
+                                            }
                                         } catch (_: SecurityException) {
                                             bleState = "Bluetooth স্ক্যান অনুমতি নেই"
                                         } catch (_: Exception) {
