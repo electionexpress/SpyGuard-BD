@@ -93,9 +93,8 @@ private fun SpyGuardApp() {
 
     val wifiReceiver = remember {
         object : BroadcastReceiver() {
+            @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context?, intent: Intent?) {
-                @SuppressLint("MissingPermission")
-                run {
                     try {
                         wifiNetworks = wifi.scanResults
                             .sortedByDescending { it.level }
@@ -108,7 +107,6 @@ private fun SpyGuardApp() {
                     } catch (_: SecurityException) {
                         wifiState = "অনুমতি নেই — Location permission দিন"
                     }
-                }
             }
         }
     }
