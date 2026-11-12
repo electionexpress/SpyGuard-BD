@@ -1,45 +1,37 @@
 package com.electionexpress.spyguardbd
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraManager
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.FlashlightOn
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +41,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 
+private val Bg = Color(0xFF07110F)
+private val Panel = Color(0xFF12201C)
+private val Mint = Color(0xFF53E0A0)
+private val Muted = Color(0xFFB8C9C2)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,110 +53,250 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SpyGuardApp() {
     val context = LocalContext.current
-    val cameraManager = remember {
-        context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+    val wifi = remember { context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager }
+    val bluetoothManager = remember { context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager }
+    val bluetoothAdapter = remember { bluetoothManager.adapter }
+
+    var permissionState by remember { mutableStateOf("অনুমতি প্রয়োজন হলে স্ক্যানের সময় চাওয়া হবে") }
+    var wifiState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
+    var wifiNetworks by remember { mutableStateOf<List<String>>(emptyList()) }
+    var bleState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
+    var bleDevices by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var isBleScanning by remember { mutableStateOf(false) }
+    var showIrGuide by remember { mutableStateOf(false) }
+
+    val requiredPermissions = remember {
+        buildList {
+            if (Build.VERSION.SDK_INT >= 31) {
+                add(Manifest.permission.BLUETOOTH_SCAN)
+                add(Manifest.permission.BLUETOOTH_CONNECT)
+            } else {
+                add(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }.distinct().toTypedArray()
     }
-    var cameraPermission by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
-    }
-    var flashMessage by remember { mutableStateOf("ফ্ল্যাশ পরীক্ষা এখনো করা হয়নি") }
-    var flashOn by remember { mutableStateOf(false) }
-    var cameraCount by remember { mutableStateOf(cameraManager.cameraIdList.size) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        cameraPermission = granted
-        if (!granted) flashMessage = "ক্যামেরা অনুমতি দেওয়া হয়নি"
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val denied = grants.filterValues { !it }.keys
+        permissionState = if (denied.isEmpty()) "প্রয়োজনীয় অনুমতি দেওয়া হয়েছে" else "কিছু অনুমতি দেওয়া হয়নি: ${denied.joinToString()}"
     }
 
-    MaterialTheme(
-        colorScheme = androidx.compose.material3.darkColorScheme(
-            primary = Color(0xFF53E0A0),
-            background = Color(0xFF07110F),
-            surface = Color(0xFF12201C)
-        )
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF07110F)) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Security, contentDescription = null, tint = Color(0xFF53E0A0))
-                    Text("  SPYGUARD BD", fontSize = 23.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-                Text("ব্যক্তিগত নিরাপত্তা স্ক্যানার", color = Color(0xFFB8C9C2))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF12201C))
-                ) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Default.Radar, contentDescription = null, tint = Color(0xFF53E0A0))
-                        Text("ডিভাইস প্রস্তুতি", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("ক্যামেরা পাওয়া গেছে: $cameraCount", color = Color(0xFFD8E7E0))
-                        Text("ক্যামেরা অনুমতি: " + if (cameraPermission) "অনুমোদিত" else "প্রয়োজন", color = Color(0xFFD8E7E0))
+    fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+
+    val wifiReceiver = remember {
+        object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                @SuppressLint("MissingPermission")
+                run {
+                    try {
+                        wifiNetworks = wifi.scanResults
+                            .sortedByDescending { it.level }
+                            .take(30)
+                            .map { result ->
+                                val name = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" }
+                                "$name • ${result.frequency} MHz • ${result.level} dBm"
+                            }
+                        wifiState = if (wifiNetworks.isEmpty()) "কোনো ফল পাওয়া যায়নি; Location চালু আছে কি না দেখুন" else "${wifiNetworks.size}টি দৃশ্যমান Wi-Fi নেটওয়ার্ক পাওয়া গেছে"
+                    } catch (_: SecurityException) {
+                        wifiState = "অনুমতি নেই — Location permission দিন"
                     }
                 }
-                FeatureCard("ক্যামেরা ও ফ্ল্যাশ পরীক্ষা", "ফোনের ক্যামেরা/ফ্ল্যাশ সচল কি না যাচাই", Icons.Default.CameraAlt)
-                Button(
-                    onClick = {
-                        if (!cameraPermission) {
-                            permissionLauncher.launch(Manifest.permission.CAMERA)
-                        } else {
-                            val flashId = cameraManager.cameraIdList.firstOrNull { id ->
-                                cameraManager.getCameraCharacteristics(id)
-                                    .get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val filter = IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+        if (Build.VERSION.SDK_INT >= 33) {
+            context.registerReceiver(wifiReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            context.registerReceiver(wifiReceiver, filter)
+        }
+        onDispose {
+            try { context.unregisterReceiver(wifiReceiver) } catch (_: Exception) {}
+        }
+    }
+
+    val bleCallback = remember {
+        object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                val address = result.device.address ?: "Unknown"
+                val label = try {
+                    result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
+                } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
+                bleDevices = bleDevices + (address to "$label • ${result.rssi} dBm")
+                bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
+            }
+            override fun onScanFailed(errorCode: Int) {
+                isBleScanning = false
+                bleState = "Bluetooth স্ক্যান ব্যর্থ (কোড $errorCode)"
+            }
+        }
+    }
+
+    DisposableEffect(isBleScanning) {
+        onDispose {
+            if (isBleScanning) {
+                try { bluetoothAdapter?.bluetoothLeScanner?.stopScan(bleCallback) } catch (_: Exception) {}
+            }
+        }
+    }
+
+    MaterialTheme(colorScheme = darkColorScheme(primary = Mint, background = Bg, surface = Panel)) {
+        Scaffold(containerColor = Bg, topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text("SPYGUARD BD", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("ব্যক্তিগত নিরাপত্তা স্ক্যানার", color = Muted, fontSize = 13.sp)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Bg)
+            )
+        }) { padding ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(22.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Security, null, tint = Mint)
+                                Text("  নিরাপত্তা ড্যাশবোর্ড", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             }
-                            if (flashId == null) {
-                                flashMessage = "এই ক্যামেরায় LED ফ্ল্যাশ পাওয়া যায়নি"
-                            } else {
-                                try {
-                                    flashOn = !flashOn
-                                    cameraManager.setTorchMode(flashId, flashOn)
-                                    flashMessage = if (flashOn) "ফ্ল্যাশ চালু হয়েছে — আবার চাপলে বন্ধ হবে" else "ফ্ল্যাশ বন্ধ হয়েছে"
-                                } catch (_: Exception) {
-                                    flashMessage = "ফ্ল্যাশ চালু করা যায়নি"
-                                    flashOn = false
-                                }
+                            Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
+                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.2.0", color = Muted)
+                            Text(permissionState, color = Muted, fontSize = 12.sp)
+                            OutlinedButton(onClick = { permissionLauncher.launch(requiredPermissions) }) {
+                                Text("প্রয়োজনীয় অনুমতি যাচাই")
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.FlashlightOn, contentDescription = null)
-                    Text(if (cameraPermission) "  ফ্ল্যাশ পরীক্ষা" else "  ক্যামেরা অনুমতি দিন")
+                    }
                 }
-                Text(flashMessage, color = Color(0xFFB8C9C2))
-                FeatureCard("Wi-Fi ও Bluetooth", "পরবর্তী ধাপে আশেপাশের দৃশ্যমান ডিভাইস স্ক্যান যুক্ত হবে", Icons.Default.Wifi)
-                FeatureCard("গোপন ক্যামেরা অনুসন্ধান", "এটি এখনো পরীক্ষামূলক; ফোন একা সব গোপন ক্যামেরা শনাক্ত করতে পারে না", Icons.Default.Security)
-                Spacer(Modifier.weight(1f))
-                Text("সংস্করণ 0.1.0 • প্রাথমিক পরীক্ষামূলক বিল্ড", color = Color(0xFF789087), fontSize = 12.sp)
+                item {
+                    SectionCard(
+                        title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
+                        subtitle = "আশপাশে সম্প্রচারিত Wi-Fi নেটওয়ার্কের নাম, ফ্রিকোয়েন্সি ও সিগন্যাল শক্তি দেখুন। এগুলো ক্যামেরা বলে প্রমাণ করে না।",
+                        icon = { Icon(Icons.Default.Wifi, null, tint = Mint) }
+                    ) {
+                        Button(onClick = {
+                            if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                                permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
+                            } else {
+                                try {
+                                    wifiState = if (wifi.startScan()) "স্ক্যান চলছে…" else "Android স্ক্যান সীমিত করেছে; কিছুক্ষণ পর আবার চেষ্টা করুন"
+                                } catch (_: SecurityException) {
+                                    wifiState = "অনুমতি নেই"
+                                }
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) { Text("Wi-Fi স্ক্যান শুরু") }
+                        Text(wifiState, color = Muted, fontSize = 13.sp)
+                        wifiNetworks.forEach { Text("• $it", color = Color.White, fontSize = 12.sp) }
+                    }
+                }
+                item {
+                    SectionCard(
+                        title = "Bluetooth Low Energy স্ক্যান",
+                        subtitle = "নিকটবর্তী BLE বিজ্ঞাপনকারী ডিভাইস দেখা যায়। নিষ্ক্রিয়, লুকানো বা BLE ব্যবহার না করা ডিভাইস দেখা যাবে না।",
+                        icon = { Icon(Icons.Default.Bluetooth, null, tint = Mint) }
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                enabled = !isBleScanning,
+                                onClick = {
+                                    val scanPermission = if (Build.VERSION.SDK_INT >= 31) Manifest.permission.BLUETOOTH_SCAN else Manifest.permission.ACCESS_FINE_LOCATION
+                                    if (!hasPermission(scanPermission)) {
+                                        permissionLauncher.launch(arrayOf(scanPermission))
+                                    } else if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
+                                        bleState = "Bluetooth চালু করুন"
+                                    } else {
+                                        try {
+                                            bleDevices = emptyMap()
+                                            bluetoothAdapter.bluetoothLeScanner?.startScan(bleCallback)
+                                            isBleScanning = true
+                                            bleState = "স্ক্যান চলছে — ১৫ সেকেন্ড পরে বন্ধ করুন"
+                                        } catch (_: SecurityException) {
+                                            bleState = "Bluetooth স্ক্যান অনুমতি নেই"
+                                        } catch (_: Exception) {
+                                            bleState = "এই ডিভাইসে BLE স্ক্যান শুরু করা যায়নি"
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("স্ক্যান শুরু") }
+                            OutlinedButton(
+                                enabled = isBleScanning,
+                                onClick = {
+                                    try { bluetoothAdapter?.bluetoothLeScanner?.stopScan(bleCallback) } catch (_: Exception) {}
+                                    isBleScanning = false
+                                    bleState = "স্ক্যান বন্ধ"
+                                }
+                            ) { Text("বন্ধ") }
+                        }
+                        Text(bleState, color = Muted, fontSize = 13.sp)
+                        bleDevices.entries.take(30).forEach { (address, detail) ->
+                            Text("• $detail\n  $address", color = Color.White, fontSize = 12.sp)
+                        }
+                    }
+                }
+                item {
+                    SectionCard(
+                        title = "ইনফ্রারেড আলো পরীক্ষা",
+                        subtitle = "ঘরের আলো কমিয়ে সন্দেহজনক লেন্স/LED-এ নজর দিন। ফোনের ক্যামেরা কিছু IR আলো দেখাতে পারে, আবার IR-cut filter-এর কারণে নাও পারে।",
+                        icon = { Icon(Icons.Default.CameraAlt, null, tint = Mint) }
+                    ) {
+                        OutlinedButton(onClick = { showIrGuide = !showIrGuide }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (showIrGuide) "নির্দেশনা বন্ধ করুন" else "পরীক্ষার নির্দেশনা দেখুন")
+                        }
+                        if (showIrGuide) {
+                            Text("১. ঘরের আলো কমান। ২. সন্দেহজনক বস্তু/ডিটেক্টরের দিকে ফোনের ক্যামেরা তাক করুন। ৩. ছোট ঝলমলে বিন্দু দেখলে সেটি অন্য আলোর উৎসও হতে পারে—নিশ্চিত ক্যামেরা নয়। ৪. সামনে ও পেছনের ক্যামেরা আলাদাভাবে পরীক্ষা করুন।", color = Color.White, fontSize = 13.sp)
+                        }
+                    }
+                }
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF19251F)), shape = RoundedCornerShape(18.dp)) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                            Icon(Icons.Default.Info, tint = Mint, contentDescription = null)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "গুরুত্বপূর্ণ সীমাবদ্ধতা: ফোনের Wi-Fi/Bluetooth স্ক্যান কেবল দৃশ্যমান রেডিও ডিভাইস দেখায়। অফলাইন ক্যামেরা, SD-card রেকর্ডার, তারযুক্ত মাইক্রোফোন বা সব RF ট্রান্সমিটার শনাক্ত করতে পারে না। এই অ্যাপ নিরাপত্তা সহায়ক, নিশ্চয়তা নয়।",
+                                color = Muted, fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun FeatureCard(title: String, detail: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF12201C))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, tint = Color(0xFF53E0A0))
-            Column(Modifier.padding(start = 12.dp)) {
-                Text(title, color = Color.White, fontWeight = FontWeight.SemiBold)
-                Text(detail, color = Color(0xFFB8C9C2), fontSize = 12.sp)
+private fun SectionCard(
+    title: String,
+    subtitle: String,
+    icon: @Composable () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(20.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                icon()
+                Spacer(Modifier.width(10.dp))
+                Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
+            Text(subtitle, color = Muted, fontSize = 12.sp)
+            content()
         }
     }
 }
