@@ -2,6 +2,7 @@ package com.electionexpress.spyguardbd
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
@@ -23,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -40,6 +42,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val CameraPanel = Color(0xFF12201C)
 private val CameraMint = Color(0xFF53E0A0)
@@ -62,6 +67,8 @@ fun CameraInspectionScreen() {
     var torchEnabled by remember { mutableStateOf(false) }
     var zoomRatio by remember { mutableStateOf(1f) }
     var observations by remember { mutableStateOf(OpticalInspection()) }
+    var roomLabel by remember { mutableStateOf("") }
+    var reportNotes by remember { mutableStateOf("") }
     var screenActive by remember { mutableStateOf(true) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -204,6 +211,44 @@ fun CameraInspectionScreen() {
                 onClick = { observations = OpticalInspection() },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("পর্যবেক্ষণ তালিকা রিসেট") }
+
+            Text("পরিদর্শন রিপোর্ট", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = roomLabel,
+                onValueChange = { roomLabel = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("স্থান / রুমের নাম") },
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = reportNotes,
+                onValueChange = { reportNotes = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("অতিরিক্ত পর্যবেক্ষণ নোট") },
+                minLines = 2
+            )
+            Button(
+                onClick = {
+                    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+                    val report = InspectionReport(
+                        roomLabel = roomLabel,
+                        observedAt = timestamp,
+                        observations = observations,
+                        notes = reportNotes
+                    )
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, report.toPlainText())
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "পরিদর্শন রিপোর্ট শেয়ার করুন"))
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("রিপোর্ট তৈরি ও শেয়ার করুন") }
+            Text(
+                "রিপোর্টটি কেবল আপনার দেওয়া নোট ও হাতে টিক দেওয়া পর্যবেক্ষণ থেকে তৈরি হবে। এটি স্বয়ংক্রিয় শনাক্তকরণ নয়; শেয়ার করার আগে প্রাপক যাচাই করুন।",
+                color = CameraMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
 
             Text(
                 "পরিদর্শনের টিপস: ফোন ধীরে ধীরে ঘোরান, বিভিন্ন কোণ থেকে বস্তু দেখুন এবং একই বিন্দুতে আলোর প্রতিফলন পুনরায় যাচাই করুন। অচেনা বৈদ্যুতিক বস্তু খুলবেন না বা স্পর্শ করবেন না।",
