@@ -7,7 +7,7 @@
 ## Current capabilities
 
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
-- **Bluetooth LE scan:** listens for nearby BLE advertisements, shows an advertised label, masked address and signal strength (RSSI), plus an observation-freshness label. Names and signal strength do not verify a device model, physical identity, or camera function. Scan automatically stops after 15 seconds.
+- **Bluetooth LE scan:** listens for nearby BLE advertisements, shows an advertised label, signal strength (RSSI), and an observation-freshness label. If an address is shown, only its validated first two octets are displayed; malformed addresses are fully hidden. Names and signal strength do not verify a device model, physical identity, or camera function. Scan automatically stops after 15 seconds.
 - **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available, plus device-supported manual zoom controls.
 - **Optical observation checklist:** lets the user record lens-like elements, repeatable glints from multiple angles, visible power/data connections, and independent rechecks. These are manual observations, not automatic detections or a camera-risk score.
 - **Inspection report history:** creates user-authored plain-text reports with local timestamp, room label, checklist values, notes, and the currently visible Wi-Fi/BLE scan results. Users can share through Android's share sheet, export a `.txt` file through the document picker, or explicitly save a copy in app-private local history and later share/delete it. History is not uploaded or synced. Wireless entries are observations only, not camera identification.
@@ -43,6 +43,7 @@ To install:
 - [ ] BLE scan can be manually stopped and restarted.
 - [ ] Create a report after BLE observations and confirm each entry includes its signal strength, freshness label, and last-seen clock time; treat these as observations, not identity proof.
 - [ ] BLE observation freshness changes from live to recent to stale at the documented time thresholds; advertised names are not presented as verified device models.
+- [ ] Confirm BLE hardware addresses are masked, malformed addresses are fully hidden, and lowercase valid addresses are normalized before display.
 - [ ] Turning Bluetooth off produces a clear message.
 - [ ] Grant CAMERA permission and verify the CameraX back-camera preview starts; deny permission and verify the explanation is clear.
 - [ ] Verify torch control only enables when the device has flash hardware; leave the screen and confirm the torch turns off.
