@@ -8,7 +8,7 @@
 
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
-- **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available.
+- **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available, plus device-supported manual zoom controls.
 - **Optical observation checklist:** lets the user record lens-like elements, repeatable glints from multiple angles, visible power/data connections, and independent rechecks. These are manual observations, not automatic detections or a camera-risk score.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
@@ -42,6 +42,7 @@ To install:
 - [ ] Turning Bluetooth off produces a clear message.
 - [ ] Grant CAMERA permission and verify the CameraX back-camera preview starts; deny permission and verify the explanation is clear.
 - [ ] Verify torch control only enables when the device has flash hardware; leave the screen and confirm the torch turns off.
+- [ ] Verify preview zoom controls respect the device-reported minimum and maximum zoom ratios; confirm unsupported zoom ranges remain safely disabled.
 - [ ] Test each optical observation checkbox and reset; confirm the app never labels observations as a confirmed camera.
 - [ ] Press Home while the torch is on; confirm the torch turns off, then return and verify preview behavior.
 - [ ] Revoke CAMERA permission in Android Settings while the app is backgrounded; return and confirm the preview is released and permission is requested again.
