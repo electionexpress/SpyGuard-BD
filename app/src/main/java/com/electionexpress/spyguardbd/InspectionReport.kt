@@ -8,7 +8,9 @@ data class InspectionReport(
     val roomLabel: String,
     val observedAt: String,
     val observations: OpticalInspection,
-    val notes: String = ""
+    val notes: String = "",
+    val nearbyWifiNetworks: List<String> = emptyList(),
+    val nearbyBluetoothDevices: List<String> = emptyList()
 ) {
     fun toPlainText(): String = buildString {
         appendLine("SpyGuard BD — Inspection Report")
@@ -20,6 +22,14 @@ data class InspectionReport(
         appendLine("- একাধিক কোণ থেকে পুনরাবৃত্ত ঝলক: ${yesNo(observations.repeatableGlintFromMultipleAngles)}")
         appendLine("- বিদ্যুৎ/ডেটা সংযোগের চিহ্ন: ${yesNo(observations.visiblePowerOrDataConnection)}")
         appendLine("- স্বাধীনভাবে পুনরায় যাচাই: ${yesNo(observations.independentlyRechecked)}")
+        appendLine()
+        appendLine("স্ক্যানের সময় দৃশ্যমান Wi-Fi নেটওয়ার্ক (${nearbyWifiNetworks.size}):")
+        if (nearbyWifiNetworks.isEmpty()) appendLine("- কোনো Wi-Fi ফলাফল সংযুক্ত করা হয়নি")
+        else nearbyWifiNetworks.forEach { appendLine("- $it") }
+        appendLine()
+        appendLine("স্ক্যানের সময় দৃশ্যমান Bluetooth LE ডিভাইস (${nearbyBluetoothDevices.size}):")
+        if (nearbyBluetoothDevices.isEmpty()) appendLine("- কোনো BLE ফলাফল সংযুক্ত করা হয়নি")
+        else nearbyBluetoothDevices.forEach { appendLine("- $it") }
         appendLine()
         appendLine("অতিরিক্ত নোট:")
         appendLine(notes.ifBlank { "কোনো অতিরিক্ত নোট নেই" })
