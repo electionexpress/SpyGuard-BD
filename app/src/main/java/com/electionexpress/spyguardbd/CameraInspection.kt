@@ -52,7 +52,14 @@ private val CameraMuted = Color(0xFFB8C9C2)
 
 /** User-controlled optical inspection preview; it does not claim to identify cameras. */
 @Composable
-fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearbyBluetoothDevices: List<String> = emptyList()) {
+fun CameraInspectionScreen(
+    nearbyWifiNetworks: List<String> = emptyList(),
+    nearbyBluetoothDevices: List<String> = emptyList(),
+    observations: OpticalInspection,
+    onObservationsChange: (OpticalInspection) -> Unit,
+    inspectionCompleted: Boolean,
+    onInspectionCompletedChange: (Boolean) -> Unit
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var permissionGranted by remember {
@@ -66,7 +73,6 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
     var zoomRatio by remember { mutableStateOf(1f) }
-    var observations by remember { mutableStateOf(OpticalInspection()) }
     var roomLabel by remember { mutableStateOf("") }
     var reportNotes by remember { mutableStateOf("") }
     var pendingReportText by remember { mutableStateOf("") }
@@ -223,18 +229,25 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                 style = MaterialTheme.typography.bodySmall
             )
             ObservationToggle("লেন্সের মতো গোল/কাচের উপাদান দেখা গেছে", observations.lensLikeElement) {
-                observations = observations.copy(lensLikeElement = it)
+                onObservationsChange(observations.copy(lensLikeElement = it))
             }
             ObservationToggle("একাধিক কোণ থেকে দেখেও একই স্থানে ঝলক পুনরায় দেখা গেছে", observations.repeatableGlintFromMultipleAngles) {
-                observations = observations.copy(repeatableGlintFromMultipleAngles = it)
+                onObservationsChange(observations.copy(repeatableGlintFromMultipleAngles = it))
             }
             ObservationToggle("বস্তুতে বিদ্যুৎ বা ডেটা সংযোগের চিহ্ন দেখা গেছে", observations.visiblePowerOrDataConnection) {
-                observations = observations.copy(visiblePowerOrDataConnection = it)
+                onObservationsChange(observations.copy(visiblePowerOrDataConnection = it))
             }
             ObservationToggle("অন্য আলো/কোণ বা দ্বিতীয়বার দেখে বিষয়টি পুনরায় যাচাই করেছি", observations.independentlyRechecked) {
-                observations = observations.copy(independentlyRechecked = it)
+                onObservationsChange(observations.copy(independentlyRechecked = it))
             }
 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = inspectionCompleted,
+                    onCheckedChange = onInspectionCompletedChange
+                )
+                Text("আমি অপটিক্যাল পরীক্ষা সম্পন্ন করেছি", color = Color.White, style = MaterialTheme.typography.bodySmall)
+            }
             Text(
                 "${observations.recordedObservationCount}/4টি পর্যবেক্ষণ নথিভুক্ত",
                 color = CameraMint,
@@ -242,7 +255,7 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
             )
             Text(observations.guidance(), color = Color(0xFFFFD28A), style = MaterialTheme.typography.bodySmall)
             OutlinedButton(
-                onClick = { observations = OpticalInspection() },
+                onClick = { onObservationsChange(OpticalInspection()); onInspectionCompletedChange(false) },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("পর্যবেক্ষণ তালিকা রিসেট") }
 
