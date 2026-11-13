@@ -44,7 +44,7 @@ class InspectionReportTest {
 
         assertTrue(report.contains("Office Wi-Fi"))
         assertTrue(report.contains("BLE tag"))
-        assertTrue(report.contains("এগুলো ক্যামেরা শনাক্ত করে না"))
+        assertTrue(report.contains("ক্যামেরার প্রমাণ নয়"))
         assertTrue(report.contains("অফলাইন, বন্ধ, তারযুক্ত"))
     }
 
