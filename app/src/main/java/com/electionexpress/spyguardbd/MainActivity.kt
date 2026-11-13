@@ -97,19 +97,25 @@ private fun SpyGuardApp() {
             @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context?, intent: Intent?) {
                     try {
-                        wifiNetworks = deduplicateWifiObservations(
-                            wifi.scanResults.map { result ->
-                                WifiObservation(
-                                    ssid = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" },
-                                    bssid = result.BSSID.orEmpty(),
-                                    frequencyMhz = result.frequency,
-                                    rssiDbm = result.level
-                                )
+                        val resultsUpdated = intent?.getBooleanExtra(
+                            WifiManager.EXTRA_RESULTS_UPDATED,
+                            false
+                        ) == true
+                        if (resultsUpdated) {
+                            wifiNetworks = deduplicateWifiObservations(
+                                wifi.scanResults.map { result ->
+                                    WifiObservation(
+                                        ssid = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" },
+                                        bssid = result.BSSID.orEmpty(),
+                                        frequencyMhz = result.frequency,
+                                        rssiDbm = result.level
+                                    )
+                                }
+                            ).map { observation ->
+                                "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm"
                             }
-                        ).map { observation ->
-                            "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm"
                         }
-                        wifiState = if (wifiNetworks.isEmpty()) "কোনো ফল পাওয়া যায়নি; Location চালু আছে কি না দেখুন" else "${wifiNetworks.size}টি দৃশ্যমান Wi-Fi নেটওয়ার্ক পাওয়া গেছে"
+                        wifiState = wifiScanStatus(resultsUpdated, if (resultsUpdated) wifiNetworks.size else wifi.scanResults.size)
                     } catch (_: SecurityException) {
                         wifiState = "অনুমতি নেই — Location permission দিন"
                     }
@@ -253,7 +259,7 @@ private fun SpyGuardApp() {
                                 permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
                             } else {
                                 try {
-                                    wifiState = if (wifi.startScan()) "স্ক্যান চলছে…" else "Android স্ক্যান সীমিত করেছে; কিছুক্ষণ পর আবার চেষ্টা করুন"
+                                    wifiState = if (wifi.startScan()) "স্ক্যানের অনুরোধ পাঠানো হয়েছে; ফল নিশ্চিত হলে আপডেট হবে" else "Android নতুন স্ক্যান গ্রহণ করেনি; দেখানো ফল পুরোনো হতে পারে"
                                 } catch (_: SecurityException) {
                                     wifiState = "অনুমতি নেই"
                                 }
