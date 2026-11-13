@@ -43,10 +43,11 @@ fun AutoScanSummaryCard(
     wifiState: String,
     wifiCount: Int,
     bluetoothState: String,
-    bluetoothCount: Int
+    bluetoothCount: Int,
+    opticalInspection: OpticalInspection,
+    opticalInspectionCompleted: Boolean
 ) {
-    var opticalChecked by remember { mutableStateOf(false) }
-    var opticalCandidate by remember { mutableStateOf(false) }
+    val opticalCandidate = opticalInspection.lensLikeElement || opticalInspection.repeatableGlintFromMultipleAngles
 
     val wifiStatus = when {
         wifiState.contains("সম্পন্ন") || wifiState.contains("নেটওয়ার্ক") && wifiCount > 0 -> CheckStatus.COMPLETED
@@ -65,9 +66,9 @@ fun AutoScanSummaryCard(
         ScanCheck("Bluetooth", bluetoothStatus, bluetoothCount, bluetoothState, EvidenceKind.BLUETOOTH_ADVERTISEMENT),
         ScanCheck(
             "Optical",
-            if (opticalChecked) CheckStatus.COMPLETED else CheckStatus.NOT_STARTED,
-            if (opticalCandidate) 1 else 0,
-            if (opticalCandidate) "ব্যবহারকারী সম্ভাব্য লেন্স/অপটিক্যাল চিহ্ন লক্ষ্য করেছেন" else "ম্যানুয়াল অপটিক্যাল পরীক্ষা সম্পন্ন হয়নি",
+            if (opticalInspectionCompleted) CheckStatus.COMPLETED else CheckStatus.NOT_STARTED,
+            opticalInspection.recordedObservationCount,
+            if (opticalCandidate) "ব্যবহারকারী লেন্স-সদৃশ উপাদান বা পুনরাবৃত্ত ঝলক নথিভুক্ত করেছেন" else opticalInspection.guidance(),
             if (opticalCandidate) EvidenceKind.OPTICAL_CANDIDATE else null
         )
     )
@@ -133,35 +134,25 @@ fun AutoScanSummaryCard(
                 ScanSourceRow("Bluetooth ডিভাইস", bluetoothState, bluetoothStatus)
                 ScanSourceRow(
                     "লেন্স / অপটিক্যাল পর্যবেক্ষণ",
-                    if (opticalChecked) "আপনার হাতে করা পর্যবেক্ষণ নথিভুক্ত হয়েছে" else "এখনো হাতে পরীক্ষা করা হয়নি",
-                    if (opticalChecked) CheckStatus.COMPLETED else CheckStatus.NOT_STARTED
+                    if (opticalInspectionCompleted) "হাতে করা অপটিক্যাল পরীক্ষা সম্পন্ন • ${opticalInspection.recordedObservationCount}/4 পর্যবেক্ষণ" else "অপটিক্যাল পরীক্ষা এখনো সম্পন্ন হিসেবে চিহ্নিত হয়নি",
+                    if (opticalInspectionCompleted) CheckStatus.COMPLETED else CheckStatus.NOT_STARTED
                 )
             }
 
             Surface(color = Color.White.copy(alpha = 0.035f), shape = RoundedCornerShape(18.dp)) {
-                Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("অপটিক্যাল পরীক্ষা", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = opticalChecked,
-                            onCheckedChange = {
-                                opticalChecked = it
-                                if (!it) opticalCandidate = false
-                            }
-                        )
-                        Text("আমি ঘর/বস্তু নিজে দেখে পরীক্ষা করেছি", color = ScanTextMuted, fontSize = 12.sp)
-                    }
-                    if (opticalChecked) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = opticalCandidate, onCheckedChange = { opticalCandidate = it })
-                            Text("সম্ভাব্য লেন্স বা ক্যামেরা-সদৃশ চিহ্ন দেখেছি", color = Color(0xFFFFC078), fontSize = 12.sp)
-                        }
-                        Text("এটি আপনার দেওয়া পর্যবেক্ষণ—ফোনের স্বয়ংক্রিয় শনাক্তকরণ নয়। প্রতিফলন অন্য বস্তু থেকেও হতে পারে।",
-                            color = ScanTextMuted, fontSize = 11.sp, lineHeight = 16.sp)
-                    } else {
-                        Text("ঘরের আলো কমিয়ে সন্দেহজনক বস্তু, ছোট লেন্স ও IR LED চোখে দেখে পরীক্ষা করুন।",
-                            color = ScanTextMuted, fontSize = 11.sp, lineHeight = 16.sp)
-                    }
+                Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("অপটিক্যাল পর্যবেক্ষণ", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        if (opticalInspectionCompleted) "ক্যামেরা পরিদর্শন স্ক্রিনে আপনার নথিভুক্ত পর্যবেক্ষণ এখানে প্রতিফলিত হচ্ছে।"
+                        else "ক্যামেরা পরিদর্শন স্ক্রিনে পর্যবেক্ষণ সম্পন্ন চিহ্নিত করলে সমন্বিত মূল্যায়ন আপডেট হবে।",
+                        color = ScanTextMuted, fontSize = 11.sp, lineHeight = 16.sp
+                    )
+                    Text(
+                        if (opticalCandidate) "সম্ভাব্য অপটিক্যাল সূত্র নথিভুক্ত — সরাসরি যাচাই প্রয়োজন।"
+                        else "এখন পর্যন্ত লেন্স-সদৃশ উপাদান বা পুনরাবৃত্ত ঝলক নথিভুক্ত হয়নি।",
+                        color = if (opticalCandidate) Color(0xFFFFC078) else ScanTextMuted,
+                        fontSize = 11.sp
+                    )
                 }
             }
 
