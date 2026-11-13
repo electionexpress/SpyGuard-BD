@@ -23,7 +23,11 @@ class InspectionReportStoreTest {
             val listed = store.list()
 
             assertEquals("2026-11-13_100000.txt", savedName)
-            assertEquals(1, listed.size)
+            val secondSavedName = store.save(report.copy(notes = "Second inspection"), "2026-11-13_100000")
+            assertEquals("2026-11-13_100000_2.txt", secondSavedName)
+            assertEquals(2, store.list().size)
+            assertTrue(store.list().any { it.content.contains("Second inspection") })
+            assertEquals(2, listed.size)
             assertTrue(listed.single().content.contains("Bedroom"))
             assertTrue(listed.single().content.contains("Checked from two angles"))
             assertTrue(store.delete(savedName))
