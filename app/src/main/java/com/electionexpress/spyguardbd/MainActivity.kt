@@ -12,8 +12,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.net.Uri
+import android.content.ActivityNotFoundException
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -42,15 +46,33 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
 
-private val Bg = Color(0xFF07110F)
-private val Panel = Color(0xFF12201C)
-private val Mint = Color(0xFF53E0A0)
-private val Muted = Color(0xFFB8C9C2)
+private val Bg = Color(0xFF07151A)
+private val Panel = Color(0xFF10242B)
+private val Mint = Color(0xFF55E6C1)
+private val Muted = Color(0xFFAAC2C5)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { SpyGuardApp() }
+    }
+}
+
+@Suppress("DEPRECATION")
+private fun isLocationServiceEnabled(context: Context): Boolean {
+    return try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            manager.isLocationEnabled
+        } else {
+            Settings.Secure.getInt(
+                context.contentResolver,
+                Settings.Secure.LOCATION_MODE,
+                Settings.Secure.LOCATION_MODE_OFF
+            ) != Settings.Secure.LOCATION_MODE_OFF
+        }
+    } catch (_: Exception) {
+        false
     }
 }
 
@@ -66,7 +88,7 @@ private fun SpyGuardApp() {
     var wifiState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
     var wifiNetworks by remember { mutableStateOf<List<String>>(emptyList()) }
     var bleState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
-    val bleDevices = remember { mutableStateMapOf<String, String>() }
+    val bleDevices = remember { mutableStateMapOf<String, BleObservation>() }
     var isBleScanning by remember { mutableStateOf(false) }
     var showIrGuide by remember { mutableStateOf(false) }
 
@@ -97,14 +119,25 @@ private fun SpyGuardApp() {
             @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context?, intent: Intent?) {
                     try {
-                        wifiNetworks = wifi.scanResults
-                            .sortedByDescending { it.level }
-                            .take(30)
-                            .map { result ->
-                                val name = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" }
-                                "$name • ${result.frequency} MHz • ${result.level} dBm"
+                        val resultsUpdated = intent?.getBooleanExtra(
+                            WifiManager.EXTRA_RESULTS_UPDATED,
+                            false
+                        ) == true
+                        if (resultsUpdated) {
+                            wifiNetworks = deduplicateWifiObservations(
+                                wifi.scanResults.map { result ->
+                                    WifiObservation(
+                                        ssid = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" },
+                                        bssid = result.BSSID.orEmpty(),
+                                        frequencyMhz = result.frequency,
+                                        rssiDbm = result.level
+                                    )
+                                }
+                            ).map { observation ->
+                                "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm • স্ক্যান সময় ${formatBleLastSeen(System.currentTimeMillis())}"
                             }
-                        wifiState = if (wifiNetworks.isEmpty()) "কোনো ফল পাওয়া যায়নি; Location চালু আছে কি না দেখুন" else "${wifiNetworks.size}টি দৃশ্যমান Wi-Fi নেটওয়ার্ক পাওয়া গেছে"
+                        }
+                        wifiState = wifiScanStatus(resultsUpdated, wifiNetworks.size)
                     } catch (_: SecurityException) {
                         wifiState = "অনুমতি নেই — Location permission দিন"
                     }
@@ -128,16 +161,19 @@ private fun SpyGuardApp() {
     val bleCallback = remember {
         object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val address = result.device.address ?: "Unknown"
-                val label = try {
-                    result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
-                } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
-                bleDevices[address] = "$label • ${result.rssi} dBm"
-                bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
+                try {
+                    val address = result.device.address ?: "Unknown"
+                    val label = result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
+                    bleDevices[address] = BleObservation(address, label, result.rssi, System.currentTimeMillis())
+                    bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
+                } catch (_: SecurityException) {
+                    isBleScanning = false
+                    bleState = "Bluetooth ডিভাইসের তথ্য পড়ার অনুমতি নেই — Nearby devices অনুমতি যাচাই করুন"
+                }
             }
             override fun onScanFailed(errorCode: Int) {
                 isBleScanning = false
-                bleState = "Bluetooth স্ক্যান ব্যর্থ (কোড $errorCode)"
+                bleState = bleScanFailureMessage(errorCode)
             }
         }
     }
@@ -177,21 +213,66 @@ private fun SpyGuardApp() {
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(22.dp)) {
-                        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF102B2B)),
+                        shape = RoundedCornerShape(26.dp)
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Security, null, tint = Mint)
-                                Text("  নিরাপত্তা ড্যাশবোর্ড", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Mint.copy(alpha = 0.14f)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Security,
+                                        contentDescription = null,
+                                        tint = Mint,
+                                        modifier = Modifier.padding(11.dp).size(26.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("SPYGUARD BD", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
+                                    Text("স্মার্ট স্পেস ইনস্পেকশন", color = Muted, fontSize = 12.sp)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(50),
+                                    color = Color(0xFF1C493C)
+                                ) {
+                                    Text("প্রস্তুত", color = Mint, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
+                                }
                             }
-                            Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
-                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.2.1", color = Muted)
+                            Text("আপনার আশপাশ পরীক্ষা করুন", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                "ক্যামেরা পরিদর্শন ও দৃশ্যমান বেতার ডিভাইসের পর্যবেক্ষণ এক জায়গায়।",
+                                color = Muted, fontSize = 13.sp
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                DashboardMetric("Wi-Fi", wifiNetworks.size.toString(), Modifier.weight(1f))
+                                DashboardMetric("Bluetooth", bleDevices.size.toString(), Modifier.weight(1f))
+                                DashboardMetric("পরিদর্শন", "লাইভ", Modifier.weight(1f))
+                            }
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.10f))
+                            Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE}",
+                                color = Muted, fontSize = 11.sp)
                             Text(permissionState, color = Muted, fontSize = 12.sp)
-                            OutlinedButton(onClick = { permissionLauncher.launch(requiredPermissions) }) {
-                                Text("প্রয়োজনীয় অনুমতি যাচাই")
+                            OutlinedButton(
+                                onClick = { permissionLauncher.launch(requiredPermissions) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text("অনুমতি ও অ্যাক্সেস যাচাই")
                             }
                         }
                     }
                 }
+                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { observation ->
+                    "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
+                }) }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
@@ -201,16 +282,34 @@ private fun SpyGuardApp() {
                         Button(onClick = {
                             if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                                 permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
+                            } else if (!wifi.isWifiEnabled) {
+                                wifiState = "Wi-Fi বন্ধ — ফোনের Wi-Fi চালু করে আবার চেষ্টা করুন"
+                            } else if (!isLocationServiceEnabled(context)) {
+                                wifiState = "Android-এর Location বন্ধ — Location চালু করে আবার চেষ্টা করুন"
                             } else {
                                 try {
-                                    wifiState = if (wifi.startScan()) "স্ক্যান চলছে…" else "Android স্ক্যান সীমিত করেছে; কিছুক্ষণ পর আবার চেষ্টা করুন"
+                                    val accepted = wifi.startScan()
+                                    wifiState = wifiScanStartStatus(
+                                        hasLocationPermission = true,
+                                        wifiEnabled = true,
+                                        locationEnabled = true,
+                                        requestAccepted = accepted
+                                    )
                                 } catch (_: SecurityException) {
-                                    wifiState = "অনুমতি নেই"
+                                    wifiState = "অনুমতি প্রত্যাখ্যাত — অ্যাপের Location permission যাচাই করুন"
+                                } catch (_: Exception) {
+                                    wifiState = "Android Wi-Fi scan শুরু করতে পারেনি — কিছুক্ষণ পরে আবার চেষ্টা করুন"
                                 }
                             }
                         }, modifier = Modifier.fillMaxWidth()) { Text("Wi-Fi স্ক্যান শুরু") }
                         Text(wifiState, color = Muted, fontSize = 13.sp)
-                        wifiNetworks.forEach { Text("• $it", color = Color.White, fontSize = 12.sp) }
+                        wifiNetworks.forEachIndexed { index, network ->
+                            ObservationRow(
+                                title = network.substringBefore(" • "),
+                                detail = network.substringAfter(" • ", "নেটওয়ার্ক তথ্য"),
+                                marker = "Wi-Fi ${index + 1}"
+                            )
+                        }
                     }
                 }
                 item {
@@ -223,9 +322,14 @@ private fun SpyGuardApp() {
                             Button(
                                 enabled = !isBleScanning,
                                 onClick = {
-                                    val scanPermission = if (Build.VERSION.SDK_INT >= 31) Manifest.permission.BLUETOOTH_SCAN else Manifest.permission.ACCESS_FINE_LOCATION
-                                    if (!hasPermission(scanPermission)) {
-                                        permissionLauncher.launch(arrayOf(scanPermission))
+                                    val scanPermissions = if (Build.VERSION.SDK_INT >= 31) {
+                                        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+                                    } else {
+                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+                                    }
+                                    val missingScanPermissions = scanPermissions.filterNot(::hasPermission)
+                                    if (missingScanPermissions.isNotEmpty()) {
+                                        permissionLauncher.launch(missingScanPermissions.toTypedArray())
                                     } else if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
                                         bleState = "Bluetooth চালু করুন"
                                     } else {
@@ -258,9 +362,54 @@ private fun SpyGuardApp() {
                             ) { Text("বন্ধ") }
                         }
                         Text(bleState, color = Muted, fontSize = 13.sp)
-                        bleDevices.entries.take(30).forEach { (address, detail) ->
-                            Text("• $detail\n  $address", color = Color.White, fontSize = 12.sp)
+                        bleDevices.values.sortedByDescending { it.rssiDbm }.take(30).forEach { observation ->
+                            ObservationRow(
+                                title = observation.displayName,
+                                detail = "${observation.rssiDbm} dBm • সর্বশেষ দেখা: ${formatBleLastSeen(observation.lastSeenAtMillis)}",
+                                marker = bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis())),
+                                footnote = "ঠিকানা: ${maskBluetoothAddress(observation.address)} • নাম/সিগনাল মডেল বা ক্যামেরার পরিচয় নিশ্চিত করে না"
+                            )
                         }
+                    }
+                }
+                item {
+                    SectionCard(
+                        title = "Android Privacy Dashboard",
+                        subtitle = "Android-এর সমর্থিত সংস্করণে সাম্প্রতিক Camera ও Microphone অ্যাক্সেসের ইতিহাস নিজে যাচাই করুন। এটি SpyGuard-এর লাইভ শনাক্তকরণ নয়।",
+                        icon = { Icon(Icons.Default.Security, null, tint = Mint) }
+                    ) {
+                        Text(
+                            "Privacy Dashboard-এ কোন অ্যাপ কখন ক্যামেরা বা মাইক্রোফোন ব্যবহার করেছে তা দেখা যেতে পারে। Android সংস্করণ ও নির্মাতাভেদে মেনুর নাম/সুবিধা আলাদা হতে পারে।",
+                            color = Muted,
+                            fontSize = 12.sp
+                        )
+                        Button(
+                            onClick = {
+                                val privacyIntent = Intent(Settings.ACTION_PRIVACY_SETTINGS)
+                                try {
+                                    context.startActivity(privacyIntent)
+                                } catch (_: ActivityNotFoundException) {
+                                    val appIntent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    try {
+                                        context.startActivity(appIntent)
+                                    } catch (_: Exception) {
+                                    }
+                                } catch (_: Exception) {
+                                    val appIntent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    try {
+                                        context.startActivity(appIntent)
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Privacy Settings খুলুন") }
                     }
                 }
                 item {
@@ -290,6 +439,52 @@ private fun SpyGuardApp() {
                     }
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun ObservationRow(
+    title: String,
+    detail: String,
+    marker: String,
+    footnote: String? = null
+) {
+    Surface(
+        color = Color.White.copy(alpha = 0.045f),
+        shape = RoundedCornerShape(13.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text(detail, color = Muted, fontSize = 11.sp)
+                }
+                Surface(color = Mint.copy(alpha = 0.12f), shape = RoundedCornerShape(50)) {
+                    Text(marker, color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp))
+                }
+            }
+            if (!footnote.isNullOrBlank()) Text(footnote, color = Muted, fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun DashboardMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = Color.White.copy(alpha = 0.055f),
+        shape = RoundedCornerShape(15.dp)
+    ) {
+        Column(
+            Modifier.padding(horizontal = 11.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = Muted, fontSize = 10.sp, maxLines = 1)
         }
     }
 }

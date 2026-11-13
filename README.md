@@ -7,9 +7,13 @@
 ## Current capabilities
 
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
-- **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
+- **Bluetooth LE scan:** listens for nearby BLE advertisements, shows an advertised label, signal strength (RSSI), and an observation-freshness label. If an address is shown, only its validated first two octets are displayed; malformed addresses are fully hidden. Names and signal strength do not verify a device model, physical identity, or camera function. Scan automatically stops after 15 seconds.
+- **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available, plus device-supported manual zoom controls.
+- **Optical observation checklist:** lets the user record lens-like elements, repeatable glints from multiple angles, visible power/data connections, and independent rechecks. These are manual observations, not automatic detections or a camera-risk score.
+- **Inspection report history:** creates user-authored plain-text reports with local timestamp, room label, checklist values, notes, and the currently visible Wi-Fi/BLE scan results. Users can share through Android's share sheet, export a `.txt` file through the document picker, or explicitly save a copy in app-private local history and later share/delete it. History is not uploaded or synced. Wireless entries are observations only, not camera identification.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
+- **Android Privacy Dashboard guidance:** provides a shortcut to Android privacy settings so users can review recent camera/microphone access where supported; if the privacy settings screen is unavailable, it falls back to this app's system settings page. It does not read another app's sensor history itself.
 
 ## Important limits — read before relying on results
 
@@ -22,7 +26,7 @@
 
 ## Build
 
-GitHub Actions runs `gradle assembleDebug` on pushes and pull requests to `main`, then uploads the debug APK as the `SpyGuard-BD-debug` artifact.
+GitHub Actions runs `gradle testDebugUnitTest assembleDebug` on pushes and pull requests to `main`, then uploads the debug APK as the `SpyGuard-BD-debug` artifact.
 
 To install:
 1. Open the latest successful **Android CI** run.
@@ -34,19 +38,39 @@ To install:
 
 - [ ] App launches and dashboard shows correct device / Android version.
 - [ ] Denying permissions produces a clear explanation and does not crash the app.
-- [ ] Wi-Fi scan with permission and Location services enabled shows available networks; empty results are not treated as proof that no devices exist.
+- [ ] Wi-Fi scan checks Location permission, Wi-Fi state, and Android Location service before requesting a scan; explain which prerequisite is missing.
+- [ ] A rejected Wi-Fi scan request is reported as not accepted (possible Android throttling/system policy), never as an empty scan; cached results remain clearly labelled.
+- [ ] A fresh Wi-Fi result broadcast with zero networks is distinguished from cached or failed results.
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
+- [ ] On Android 12+, grant BLUETOOTH_SCAN and BLUETOOTH_CONNECT together; deny either permission and confirm the app explains why scanning cannot proceed.
 - [ ] BLE scan can be manually stopped and restarted.
+- [ ] Trigger BLE scan failure conditions where possible and confirm Android failure codes are translated into actionable Bengali guidance while retaining the raw code for troubleshooting.
+- [ ] Revoke Nearby devices permission during BLE observation where possible; confirm callback access errors are handled without crashing.
+- [ ] Create a report after BLE observations and confirm each entry includes its signal strength, freshness label, and last-seen clock time; treat these as observations, not identity proof.
+- [ ] BLE observation freshness changes from live to recent to stale at the documented time thresholds; advertised names are not presented as verified device models.
+- [ ] Confirm BLE hardware addresses are masked, malformed addresses are fully hidden, and lowercase valid addresses are normalized before display.
 - [ ] Turning Bluetooth off produces a clear message.
+- [ ] Grant CAMERA permission and verify the CameraX back-camera preview starts; deny permission and verify the explanation is clear.
+- [ ] Verify torch control only enables when the device has flash hardware; leave the screen and confirm the torch turns off.
+- [ ] Verify preview zoom controls respect the device-reported minimum and maximum zoom ratios; confirm unsupported zoom ranges remain safely disabled.
+- [ ] Test each optical observation checkbox and reset; confirm the app never labels observations as a confirmed camera.
+- [ ] Create a report with a room label and notes; verify timestamp and checklist values, then share only to a destination selected by the user.
+- [ ] Create a report with blank optional fields; verify the report clearly labels them as unspecified and does not claim a camera was detected.
+- [ ] Save a report as `.txt` through Android's document picker; verify the selected destination contains the UTF-8 report and cancelling does not create a file.
+- [ ] Explicitly save a report to local history; verify it remains after leaving and reopening the screen, can be shared, and can be deleted.
+- [ ] Run Wi-Fi/BLE scans, create a report, and verify only the currently visible scan results are attached with the non-camera-identification warning.
+- [ ] Press Home while the torch is on; confirm the torch turns off, then return and verify preview behavior.
+- [ ] Revoke CAMERA permission in Android Settings while the app is backgrounded; return and confirm the preview is released and permission is requested again.
+- [ ] Open the Android Privacy Dashboard shortcut; verify it opens Privacy settings where available and falls back to this app's settings if that screen is unavailable. Review camera/microphone access history manually where the OS supports it.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
 
 ## Roadmap (not yet implemented)
 
-- Camera preview-assisted visual inspection and optional torch control with explicit user action.
-- Android privacy-dashboard guidance and a local sensor-use checklist.
-- Better scan history, deduplication, and exportable reports.
-- Automated unit/instrumentation tests and a documented device test matrix.
+- Automated image-based lens/glint candidate analysis with device-specific validation and false-positive evaluation.
+- Instrumentation tests and a documented physical-device test matrix.
 
 A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
+
+- Wi-Fi observations included in inspection reports carry the displayed scan-observation time; treat them as a snapshot, not continuous monitoring.
