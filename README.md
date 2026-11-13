@@ -1,14 +1,16 @@
 # SpyGuard BD
 
-**Version:** 0.3.0  
+**Version:** 0.4.0  
 **Platform:** Android (Kotlin + Jetpack Compose + CameraX)  
 **Purpose:** Personal privacy inspection helper. This app is not a certified counter-surveillance instrument and cannot guarantee detection of every hidden camera or recorder.
 
 ## Current capabilities
 
-- **Camera-assisted inspection (0.3.0):** live rear-camera preview, optional device torch control, and user-triggered evidence photos.
+- **Camera-assisted inspection (0.4.0):** live rear-camera preview, optional device torch control, and user-triggered evidence photos.
 - **Local evidence storage:** inspection photos are saved under the app-private `files/camera-evidence` directory. This feature does not upload photos to a server.
 - **Evidence status:** saved photos are labelled `Visual Candidate — manual review required`; no camera is automatically declared verified.
+- **Conservative evidence checklist (0.4.0):** combines manual visual observations with manually confirmed camera-specific protocol evidence and direct stream/recording evidence. Wi-Fi/BLE presence, IR glow, or reflection alone cannot produce a verified/active status.
+- **Evidence policy unit tests:** tests ensure a camera is not marked verified or active without the required independent evidence.
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
@@ -19,11 +21,12 @@
 The current release is the first camera-inspection foundation, not the complete six-engine system.
 
 1. CameraX visual inspection and local evidence capture — implemented.
-2. Optical lens/reflection analysis with a labelled test dataset — not implemented.
-3. Camera-specific AI recognition model and false-positive/false-negative evaluation — not implemented.
-4. IR compatibility checks — guidance only; automatic IR detection is not implemented.
-5. Network service discovery for supported camera protocols — not implemented.
-6. Evidence correlation, verified-device classification, and exportable inspection reports — not implemented.
+2. Manual evidence assessment checklist with conservative levels and unit tests — implemented; this is not automatic recognition.
+3. Optical lens/reflection analysis with a labelled test dataset — not implemented.
+4. Camera-specific AI recognition model and false-positive/false-negative evaluation — not implemented.
+5. IR compatibility checks — guidance only; automatic IR detection is not implemented.
+6. Network service discovery for supported camera protocols — not implemented; protocol evidence is currently a manual checklist input.
+7. Automatic evidence correlation and exportable inspection reports — not implemented.
 
 ## Important limits — read before relying on results
 
@@ -37,7 +40,7 @@ The current release is the first camera-inspection foundation, not the complete 
 
 ## Build
 
-GitHub Actions runs `gradle assembleDebug` on pushes and pull requests to `main`, then uploads the debug APK as the `SpyGuard-BD-debug` artifact.
+GitHub Actions runs `gradle testDebugUnitTest assembleDebug` on pushes and pull requests to `main`, then uploads the debug APK as the `SpyGuard-BD-debug` artifact.
 
 To install:
 1. Open the latest successful **Android CI** run.
@@ -61,4 +64,4 @@ To install:
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
 
-A green CI build confirms compilation and packaging, not real-world detection accuracy. Camera recognition, IR detection, network camera discovery, and false-positive/false-negative rates require separate implementation and physical-device validation.
+A green CI run confirms the evidence-policy unit tests, compilation and packaging, not real-world detection accuracy. Camera recognition, IR detection, network camera discovery, and false-positive/false-negative rates require separate implementation and physical-device validation.
