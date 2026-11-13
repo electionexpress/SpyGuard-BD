@@ -37,6 +37,42 @@ class AutoScanEngineTest {
         assertEquals(ScanVerdict.UNDETERMINED, report.verdict)
     }
 
+    @Test fun incompleteOpticalCandidateDoesNotCountAsEvidence() {
+        val report = AutoScanEngine.evaluate(listOf(
+            ScanCheck("Optical", CheckStatus.RUNNING, 1, evidenceKind = EvidenceKind.OPTICAL_CANDIDATE),
+            ScanCheck("Wi-Fi", CheckStatus.COMPLETED),
+            ScanCheck("Bluetooth", CheckStatus.COMPLETED)
+        ))
+        assertEquals(ScanVerdict.UNDETERMINED, report.verdict)
+    }
+
+    @Test fun failedRequiredSourceCannotProduceCleanVerdict() {
+        val report = AutoScanEngine.evaluate(listOf(
+            ScanCheck("Wi-Fi", CheckStatus.COMPLETED),
+            ScanCheck("Bluetooth", CheckStatus.FAILED),
+            ScanCheck("Optical", CheckStatus.COMPLETED)
+        ))
+        assertEquals(ScanVerdict.UNDETERMINED, report.verdict)
+    }
+
+    @Test fun unavailableRequiredSourceCannotProduceCleanVerdict() {
+        val report = AutoScanEngine.evaluate(listOf(
+            ScanCheck("Wi-Fi", CheckStatus.COMPLETED),
+            ScanCheck("Bluetooth", CheckStatus.UNAVAILABLE),
+            ScanCheck("Optical", CheckStatus.COMPLETED)
+        ))
+        assertEquals(ScanVerdict.UNDETERMINED, report.verdict)
+    }
+
+    @Test fun negativeObservationCountsDoNotReduceOrInflateTotals() {
+        val report = AutoScanEngine.evaluate(listOf(
+            ScanCheck("Wi-Fi", CheckStatus.COMPLETED, -8),
+            ScanCheck("Bluetooth", CheckStatus.COMPLETED, 3),
+            ScanCheck("Optical", CheckStatus.COMPLETED, 1)
+        ))
+        assertEquals(4, report.totalObservations)
+    }
+
     @Test fun genericSensorReadingDoesNotProveCamera() {
         val report = AutoScanEngine.evaluate(listOf(
             ScanCheck("Optical", CheckStatus.COMPLETED),
