@@ -27,10 +27,11 @@ class InspectionReportStoreTest {
             assertEquals("2026-11-13_100000_2.txt", secondSavedName)
             assertEquals(2, store.list().size)
             assertTrue(store.list().any { it.content.contains("Second inspection") })
-            assertEquals(2, listed.size)
+            assertEquals(1, listed.size)
             assertTrue(listed.single().content.contains("Bedroom"))
             assertTrue(listed.single().content.contains("Checked from two angles"))
             assertTrue(store.delete(savedName))
+            assertTrue(store.delete(secondSavedName))
             assertTrue(store.list().isEmpty())
         } finally {
             directory.deleteRecursively()
