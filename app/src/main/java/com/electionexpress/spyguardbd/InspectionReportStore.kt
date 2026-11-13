@@ -22,7 +22,13 @@ class InspectionReportStore(private val filesDirectory: File) {
         }
         val safeStem = fileStem.replace(Regex("[^A-Za-z0-9_-]+"), "_").trim('_').take(48)
             .ifBlank { "inspection" }
-        val file = File(reportsDirectory, "$safeStem.txt")
+        // Never overwrite an earlier report when two inspections share the same timestamp.
+        var file = File(reportsDirectory, "$safeStem.txt")
+        var suffix = 2
+        while (file.exists()) {
+            file = File(reportsDirectory, "${safeStem}_$suffix.txt")
+            suffix += 1
+        }
         file.writeText(report.toPlainText(), Charsets.UTF_8)
         return file.name
     }
