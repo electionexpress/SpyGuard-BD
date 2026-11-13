@@ -14,6 +14,7 @@
 - **Local ONVIF discovery (0.5.0):** user-initiated, bounded WS-Discovery multicast probe on the current Wi-Fi LAN; displays responding source IP and advertised HTTP(S) service addresses. No IP-range sweep, login, RTSP stream opening, or cloud upload.
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
+- **Nearby-device category hints:** BLE advertised names are conservatively grouped into possible phone/tablet, computer, network equipment, camera/surveillance, audio, wearable, or unknown categories. These are name-based hints only, not verified make/model or proof of device purpose; unnamed/randomized advertisements remain unknown.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
 
