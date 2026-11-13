@@ -192,6 +192,7 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
+                item { CameraInspectionPanel() }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
