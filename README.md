@@ -13,6 +13,7 @@
 - **Inspection report history:** creates user-authored plain-text reports with local timestamp, room label, checklist values, notes, and the currently visible Wi-Fi/BLE scan results. Users can share through Android's share sheet, export a `.txt` file through the document picker, or explicitly save a copy in app-private local history and later share/delete it. History is not uploaded or synced. Wireless entries are observations only, not camera identification.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
+- **Android Privacy Dashboard guidance:** provides a shortcut to Android privacy settings so users can review recent camera/microphone access where supported; if the privacy settings screen is unavailable, it falls back to this app's system settings page. It does not read another app's sensor history itself.
 
 ## Important limits — read before relying on results
 
@@ -56,6 +57,7 @@ To install:
 - [ ] Run Wi-Fi/BLE scans, create a report, and verify only the currently visible scan results are attached with the non-camera-identification warning.
 - [ ] Press Home while the torch is on; confirm the torch turns off, then return and verify preview behavior.
 - [ ] Revoke CAMERA permission in Android Settings while the app is backgrounded; return and confirm the preview is released and permission is requested again.
+- [ ] Open the Android Privacy Dashboard shortcut; verify it opens Privacy settings where available and falls back to this app's settings if that screen is unavailable. Review camera/microphone access history manually where the OS supports it.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
