@@ -1,12 +1,14 @@
 package com.electionexpress.spyguardbd
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,9 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,7 +25,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,18 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.core.content.PermissionChecker
 
 private val CameraPanel = Color(0xFF12201C)
 private val CameraMint = Color(0xFF53E0A0)
 private val CameraMuted = Color(0xFFB8C9C2)
 
-/**
- * User-controlled optical inspection preview. The preview does not claim to
- * identify a camera; it helps the user visually inspect suspicious objects.
- */
+/** User-controlled optical inspection preview; it does not claim to identify cameras. */
 @Composable
 fun CameraInspectionScreen() {
     val context = LocalContext.current
@@ -61,6 +53,7 @@ fun CameraInspectionScreen() {
         )
     }
     var camera by remember { mutableStateOf<Camera?>(null) }
+    var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
 
@@ -94,49 +87,47 @@ fun CameraInspectionScreen() {
                         PreviewView(viewContext).apply {
                             scaleType = PreviewView.ScaleType.FILL_CENTER
                             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                        }
-                    },
-                    update = { previewView ->
-                        val providerFuture = ProcessCameraProvider.getInstance(context)
-                        providerFuture.addListener({
-                            try {
-                                val provider = providerFuture.get()
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(previewView.surfaceProvider)
+                            val previewView = this
+                            val providerFuture = ProcessCameraProvider.getInstance(viewContext)
+                            providerFuture.addListener({
+                                try {
+                                    val cameraProvider = providerFuture.get()
+                                    provider = cameraProvider
+                                    val preview = Preview.Builder().build().also {
+                                        it.setSurfaceProvider(previewView.surfaceProvider)
+                                    }
+                                    cameraProvider.unbindAll()
+                                    camera = cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        CameraSelector.DEFAULT_BACK_CAMERA,
+                                        preview
+                                    )
+                                    cameraStatus = "লাইভ প্রিভিউ চালু"
+                                } catch (error: Exception) {
+                                    cameraStatus = "ক্যামেরা চালু করা যায়নি: ${error.localizedMessage ?: "অজানা সমস্যা"}"
                                 }
-                                provider.unbindAll()
-                                camera = provider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    CameraSelector.DEFAULT_BACK_CAMERA,
-                                    preview
-                                )
-                                cameraStatus = "লাইভ প্রিভিউ চালু"
-                            } catch (error: Exception) {
-                                cameraStatus = "ক্যামেরা চালু করা যায়নি: ${error.localizedMessage ?: "অজানা সমস্যা"}"
-                            }
-                        }, ContextCompat.getMainExecutor(context))
+                            }, ContextCompat.getMainExecutor(viewContext))
+                        }
                     }
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
-                            val target = camera
-                            if (target?.cameraInfo?.hasFlashUnit() == true) {
+                            val activeCamera = camera
+                            if (activeCamera?.cameraInfo?.hasFlashUnit() == true) {
                                 torchEnabled = !torchEnabled
-                                target.cameraControl.enableTorch(torchEnabled)
+                                activeCamera.cameraControl.enableTorch(torchEnabled)
                             } else {
                                 cameraStatus = "এই ডিভাইসে ফ্ল্যাশ পাওয়া যায়নি"
                             }
                         },
                         enabled = camera?.cameraInfo?.hasFlashUnit() == true
-                    ) {
-                        Text(if (torchEnabled) "ফ্ল্যাশ বন্ধ" else "ফ্ল্যাশ চালু")
-                    }
+                    ) { Text(if (torchEnabled) "ফ্ল্যাশ বন্ধ" else "ফ্ল্যাশ চালু") }
                     OutlinedButton(onClick = {
                         camera?.cameraControl?.enableTorch(false)
                         torchEnabled = false
                         cameraStatus = "পরিদর্শন চলমান"
-                    }) { Text("রিসেট") }
+                    }) { Text("ফ্ল্যাশ রিসেট") }
                 }
             } else {
                 Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
@@ -147,12 +138,12 @@ fun CameraInspectionScreen() {
             Text(cameraStatus, color = CameraMint, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(2.dp))
             Text(
-                "পরিদর্শনের টিপস: ফোন ধীরে ধীরে ঘোরান, বিভিন্ন কোণ থেকে বস্তু দেখুন এবং একই বিন্দুতে আলোর প্রতিফলন পুনরায় যাচাই করুন। কোনো সন্দেহজনক বস্তু পেলে কাছ থেকে ও দূর থেকে দেখুন।",
+                "পরিদর্শনের টিপস: ফোন ধীরে ধীরে ঘোরান, বিভিন্ন কোণ থেকে বস্তু দেখুন এবং একই বিন্দুতে আলোর প্রতিফলন পুনরায় যাচাই করুন।",
                 color = CameraMuted,
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
-                "সীমাবদ্ধতা: এই সংস্করণে লাইভ প্রিভিউ ও ফ্ল্যাশ নিয়ন্ত্রণ আছে; স্বয়ংক্রিয় লেন্স শনাক্তকরণ বা AI শ্রেণিবিন্যাস এখনো যুক্ত হয়নি।",
+                "এই সংস্করণে লাইভ প্রিভিউ ও ফ্ল্যাশ নিয়ন্ত্রণ আছে; স্বয়ংক্রিয় লেন্স শনাক্তকরণ বা AI শ্রেণিবিন্যাস এখনো যুক্ত হয়নি।",
                 color = Color(0xFFFFD28A),
                 style = MaterialTheme.typography.bodySmall
             )
@@ -162,7 +153,9 @@ fun CameraInspectionScreen() {
     DisposableEffect(lifecycleOwner) {
         onDispose {
             camera?.cameraControl?.enableTorch(false)
+            provider?.unbindAll()
             camera = null
+            provider = null
         }
     }
 }
