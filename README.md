@@ -70,3 +70,5 @@ To install:
 - Instrumentation tests and a documented physical-device test matrix.
 
 A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
+
+- Wi-Fi observations included in inspection reports carry the displayed scan-observation time; treat them as a snapshot, not continuous monitoring.
