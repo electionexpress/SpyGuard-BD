@@ -14,6 +14,9 @@ import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.net.Uri
+import android.content.ActivityNotFoundException
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -333,6 +336,46 @@ private fun SpyGuardApp() {
                                 footnote = "ঠিকানা: ${maskBluetoothAddress(observation.address)} • নাম/সিগনাল মডেল বা ক্যামেরার পরিচয় নিশ্চিত করে না"
                             )
                         }
+                    }
+                }
+                item {
+                    SectionCard(
+                        title = "Android Privacy Dashboard",
+                        subtitle = "Android-এর সমর্থিত সংস্করণে সাম্প্রতিক Camera ও Microphone অ্যাক্সেসের ইতিহাস নিজে যাচাই করুন। এটি SpyGuard-এর লাইভ শনাক্তকরণ নয়।",
+                        icon = { Icon(Icons.Default.Security, null, tint = Mint) }
+                    ) {
+                        Text(
+                            "Privacy Dashboard-এ কোন অ্যাপ কখন ক্যামেরা বা মাইক্রোফোন ব্যবহার করেছে তা দেখা যেতে পারে। Android সংস্করণ ও নির্মাতাভেদে মেনুর নাম/সুবিধা আলাদা হতে পারে।",
+                            color = Muted,
+                            fontSize = 12.sp
+                        )
+                        Button(
+                            onClick = {
+                                val privacyIntent = Intent(Settings.ACTION_PRIVACY_SETTINGS)
+                                try {
+                                    context.startActivity(privacyIntent)
+                                } catch (_: ActivityNotFoundException) {
+                                    val appIntent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    try {
+                                        context.startActivity(appIntent)
+                                    } catch (_: Exception) {
+                                    }
+                                } catch (_: Exception) {
+                                    val appIntent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    try {
+                                        context.startActivity(appIntent)
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Privacy Settings খুলুন") }
                     }
                 }
                 item {
