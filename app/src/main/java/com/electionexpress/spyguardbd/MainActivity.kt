@@ -603,3 +603,48 @@ private fun SectionCard(
         }
     }
 }
+
+@Composable
+private fun CameraInspectionScreen(
+    nearbyWifiNetworks: List<String>,
+    nearbyBluetoothDevices: List<String>
+) {
+    SectionCard(
+        title = "ক্যামেরা পরিদর্শন",
+        subtitle = "এই অংশটি অপটিক্যাল/শারীরিক পর্যবেক্ষণের সহায়ক। আশপাশের Wi-Fi বা Bluetooth ডিভাইস দেখে কোনো ফোনের ক্যামেরা চালু আছে কি না জানা যায় না।",
+        icon = { Icon(Icons.Default.CameraAlt, null, tint = Mint) }
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DashboardMetric("Wi-Fi পর্যবেক্ষণ", nearbyWifiNetworks.size.toString(), Modifier.weight(1f))
+            DashboardMetric("BLE পর্যবেক্ষণ", nearbyBluetoothDevices.size.toString(), Modifier.weight(1f))
+        }
+        Text(
+            "ধাপে ধাপে পরীক্ষা",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp
+        )
+        listOf(
+            "১. ঘরের আলো কমিয়ে সন্দেহজনক বস্তু, ঘড়ি, চার্জার, ডিটেক্টর ও সাজসজ্জার জিনিস পরীক্ষা করুন।",
+            "২. ছোট কাচের লেন্স বা অস্বাভাবিক ছিদ্র খুঁজুন; একই বস্তু বিভিন্ন কোণ থেকে দেখুন।",
+            "৩. ফোনের ক্যামেরা দিয়ে সম্ভাব্য IR LED দেখুন—সব ফোনের ক্যামেরা IR আলো ধরতে পারে না।",
+            "৪. কোনো ঝলক বা প্রতিফলন পেলে সেটিকে শুধু সম্ভাব্য সূত্র হিসেবে নথিভুক্ত করুন; নিশ্চিত ক্যামেরা প্রমাণ নয়।",
+            "৫. সন্দেহ থাকলে বস্তু স্পর্শ/খুলে না দেখে নিরাপদে ছবি তুলুন এবং প্রয়োজনে দায়িত্বশীল কর্তৃপক্ষ বা পেশাদার পরীক্ষকের সহায়তা নিন।"
+        ).forEach { instruction ->
+            Text(instruction, color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
+        }
+        Surface(
+            color = Color(0xFF3A2B1C),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                "গুরুত্বপূর্ণ: SpyGuard BD বর্তমানে নিজে থেকে অন্য ফোনের ক্যামেরা চালু/রেকর্ডিং শনাক্ত করতে পারে না। এখানে দেখানো রেডিও পর্যবেক্ষণ ক্যামেরার প্রমাণ নয়।",
+                modifier = Modifier.padding(12.dp),
+                color = Color(0xFFFFD29A),
+                fontSize = 11.sp,
+                lineHeight = 16.sp
+            )
+        }
+    }
+}
+
