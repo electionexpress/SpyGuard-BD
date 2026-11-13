@@ -42,7 +42,7 @@ class InspectionReportTest {
             roomLabel = "Meeting room",
             observedAt = "2026-11-13 12:00:00",
             observations = OpticalInspection(),
-            nearbyWifiNetworks = listOf("Office Wi-Fi • 2412 MHz • -55 dBm"),
+            nearbyWifiNetworks = listOf("Office Wi-Fi • 2412 MHz • -55 dBm • স্ক্যান সময় 12:00:04"),
             nearbyBluetoothDevices = listOf("BLE tag • -68 dBm • সাম্প্রতিক সিগনাল • 12:00:05")
         ).toPlainText()
 
