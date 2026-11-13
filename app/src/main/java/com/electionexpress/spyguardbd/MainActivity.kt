@@ -151,7 +151,7 @@ private fun SpyGuardApp() {
             }
             override fun onScanFailed(errorCode: Int) {
                 isBleScanning = false
-                bleState = "Bluetooth স্ক্যান ব্যর্থ (কোড $errorCode)"
+                bleState = bleScanFailureMessage(errorCode)
             }
         }
     }
