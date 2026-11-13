@@ -258,7 +258,13 @@ private fun SpyGuardApp() {
                             }
                         }, modifier = Modifier.fillMaxWidth()) { Text("Wi-Fi স্ক্যান শুরু") }
                         Text(wifiState, color = Muted, fontSize = 13.sp)
-                        wifiNetworks.forEach { Text("• $it", color = Color.White, fontSize = 12.sp) }
+                        wifiNetworks.forEachIndexed { index, network ->
+                            ObservationRow(
+                                title = network.substringBefore(" • "),
+                                detail = network.substringAfter(" • ", "নেটওয়ার্ক তথ্য"),
+                                marker = "Wi-Fi ${index + 1}"
+                            )
+                        }
                     }
                 }
                 item {
@@ -307,10 +313,11 @@ private fun SpyGuardApp() {
                         }
                         Text(bleState, color = Muted, fontSize = 13.sp)
                         bleDevices.values.sortedByDescending { it.rssiDbm }.take(30).forEach { observation ->
-                            Text(
-                                "• ${observation.displayName} • ${observation.rssiDbm} dBm\n  সর্বশেষ দেখা: ${formatBleLastSeen(observation.lastSeenAtMillis)} • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))}\n  ঠিকানা: ${maskBluetoothAddress(observation.address)}\\n  নোট: নাম/সিগনাল ডিভাইসের মডেল বা ক্যামেরা পরিচয় নিশ্চিত করে",
-                                color = Color.White,
-                                fontSize = 12.sp
+                            ObservationRow(
+                                title = observation.displayName,
+                                detail = "${observation.rssiDbm} dBm • সর্বশেষ দেখা: ${formatBleLastSeen(observation.lastSeenAtMillis)}",
+                                marker = bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis())),
+                                footnote = "ঠিকানা: ${maskBluetoothAddress(observation.address)} • নাম/সিগনাল মডেল বা ক্যামেরার পরিচয় নিশ্চিত করে না"
                             )
                         }
                     }
@@ -346,6 +353,34 @@ private fun SpyGuardApp() {
     }
 }
 
+
+@Composable
+private fun ObservationRow(
+    title: String,
+    detail: String,
+    marker: String,
+    footnote: String? = null
+) {
+    Surface(
+        color = Color.White.copy(alpha = 0.045f),
+        shape = RoundedCornerShape(13.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text(detail, color = Muted, fontSize = 11.sp)
+                }
+                Surface(color = Mint.copy(alpha = 0.12f), shape = RoundedCornerShape(50)) {
+                    Text(marker, color = Mint, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp))
+                }
+            }
+            if (!footnote.isNullOrBlank()) Text(footnote, color = Muted, fontSize = 10.sp)
+        }
+    }
+}
 
 @Composable
 private fun DashboardMetric(label: String, value: String, modifier: Modifier = Modifier) {
