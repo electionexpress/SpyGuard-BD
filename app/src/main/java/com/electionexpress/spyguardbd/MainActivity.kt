@@ -165,7 +165,7 @@ private fun SpyGuardApp() {
                 title = {
                     Column {
                         Text("SPYGUARD BD", fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("ব্যক্তিগত নিরাপত্তা স্ক্যানার", color = Muted, fontSize = 13.sp)
+                        Text("নিকটবর্তী ইলেকট্রনিক ডিভাইস শনাক্তকরণ", color = Muted, fontSize = 13.sp)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Bg)
@@ -184,7 +184,7 @@ private fun SpyGuardApp() {
                                 Text("  নিরাপত্তা ড্যাশবোর্ড", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             }
                             Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
-                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.5.0", color = Muted)
+                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.6.0", color = Muted)
                             Text(permissionState, color = Muted, fontSize = 12.sp)
                             OutlinedButton(onClick = { permissionLauncher.launch(requiredPermissions) }) {
                                 Text("প্রয়োজনীয় অনুমতি যাচাই")
