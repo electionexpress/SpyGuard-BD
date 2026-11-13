@@ -266,7 +266,7 @@ private fun SpyGuardApp() {
                         Text(bleState, color = Muted, fontSize = 13.sp)
                         bleDevices.values.sortedByDescending { it.rssiDbm }.take(30).forEach { observation ->
                             Text(
-                                "• ${observation.displayName} • ${observation.rssiDbm} dBm\n  সর্বশেষ দেখা: ${formatBleLastSeen(observation.lastSeenAtMillis)}\n  ঠিকানা: ${maskBluetoothAddress(observation.address)}",
+                                "• ${observation.displayName} • ${observation.rssiDbm} dBm\n  সর্বশেষ দেখা: ${formatBleLastSeen(observation.lastSeenAtMillis)} • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))}\n  ঠিকানা: ${maskBluetoothAddress(observation.address)}",
                                 color = Color.White,
                                 fontSize = 12.sp
                             )
