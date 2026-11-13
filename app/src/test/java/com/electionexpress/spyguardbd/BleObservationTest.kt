@@ -30,4 +30,10 @@ class BleObservationTest {
     fun futureTimestampIsClampedToLive() {
         assertEquals(BleFreshness.LIVE, classifyBleFreshness(110_000L, 100_000L))
     }
+
+    @Test
+    fun freshnessThresholdsAreStableAtExactBoundaries() {
+        assertEquals(BleFreshness.RECENT, classifyBleFreshness(70_000L, 100_000L))
+        assertEquals(BleFreshness.STALE, classifyBleFreshness(-20_000L, 100_000L))
+    }
 }
