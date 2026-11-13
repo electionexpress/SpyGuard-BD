@@ -43,11 +43,13 @@ class InspectionReportTest {
             observedAt = "2026-11-13 12:00:00",
             observations = OpticalInspection(),
             nearbyWifiNetworks = listOf("Office Wi-Fi • 2412 MHz • -55 dBm"),
-            nearbyBluetoothDevices = listOf("BLE tag • -68 dBm")
+            nearbyBluetoothDevices = listOf("BLE tag • -68 dBm • সাম্প্রতিক সিগনাল • 12:00:05")
         ).toPlainText()
 
         assertTrue(report.contains("Office Wi-Fi"))
         assertTrue(report.contains("BLE tag"))
+        assertTrue(report.contains("সাম্প্রতিক সিগনাল"))
+        assertTrue(report.contains("12:00:05"))
         assertTrue(report.contains("ক্যামেরার প্রমাণ নয়"))
         assertTrue(report.contains("অফলাইন, বন্ধ, তারযুক্ত"))
     }
