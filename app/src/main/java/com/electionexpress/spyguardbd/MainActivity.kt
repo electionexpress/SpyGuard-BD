@@ -279,9 +279,14 @@ private fun SpyGuardApp() {
                             Button(
                                 enabled = !isBleScanning,
                                 onClick = {
-                                    val scanPermission = if (Build.VERSION.SDK_INT >= 31) Manifest.permission.BLUETOOTH_SCAN else Manifest.permission.ACCESS_FINE_LOCATION
-                                    if (!hasPermission(scanPermission)) {
-                                        permissionLauncher.launch(arrayOf(scanPermission))
+                                    val scanPermissions = if (Build.VERSION.SDK_INT >= 31) {
+                                        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+                                    } else {
+                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+                                    }
+                                    val missingScanPermissions = scanPermissions.filterNot(::hasPermission)
+                                    if (missingScanPermissions.isNotEmpty()) {
+                                        permissionLauncher.launch(missingScanPermissions.toTypedArray())
                                     } else if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
                                         bleState = "Bluetooth চালু করুন"
                                     } else {
