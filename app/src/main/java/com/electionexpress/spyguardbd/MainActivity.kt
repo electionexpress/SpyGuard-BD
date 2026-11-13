@@ -266,7 +266,8 @@ private fun SpyGuardApp() {
                             Text("নামভিত্তিক সম্ভাব্য শ্রেণি: " + categoryCounts.entries.joinToString(" • ") { "${it.key.labelBn}: ${it.value}" }, color = Mint, fontSize = 12.sp)
                         }
                         bleDevices.entries.take(30).forEach { (address, detail) ->
-                            Text("• $detail\n  $address", color = Color.White, fontSize = 12.sp)
+                            val classification = classifyNearbyDevice(detail.substringBefore(" • "))
+                            Text("• ${classification.category.labelBn} — $detail\n  $address\n  ${classification.confidenceLabel}: ${classification.explanation}", color = Color.White, fontSize = 12.sp)
                         }
                     }
                 }
