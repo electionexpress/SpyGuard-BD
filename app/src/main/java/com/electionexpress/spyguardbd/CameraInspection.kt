@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 private val CameraPanel = Color(0xFF12201C)
@@ -59,6 +61,7 @@ fun CameraInspectionScreen() {
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
     var observations by remember { mutableStateOf(OpticalInspection()) }
+    var screenActive by remember { mutableStateOf(true) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -94,6 +97,7 @@ fun CameraInspectionScreen() {
                             val providerFuture = ProcessCameraProvider.getInstance(viewContext)
                             providerFuture.addListener({
                                 try {
+                                    if (!screenActive || ContextCompat.checkSelfPermission(viewContext, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return@addListener
                                     val cameraProvider = providerFuture.get()
                                     provider = cameraProvider
                                     val preview = Preview.Builder().build().also {
@@ -185,14 +189,39 @@ fun CameraInspectionScreen() {
     }
 
     DisposableEffect(lifecycleOwner) {
+        screenActive = true
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    camera?.cameraControl?.enableTorch(false)
+                    torchEnabled = false
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                    permissionGranted = granted
+                    if (!granted) {
+                        camera?.cameraControl?.enableTorch(false)
+                        provider?.unbindAll()
+                        camera = null
+                        provider = null
+                        torchEnabled = false
+                        cameraStatus = "ক্যামেরা অনুমতি আর সক্রিয় নেই"
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
         onDispose {
+            screenActive = false
+            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             camera?.cameraControl?.enableTorch(false)
             provider?.unbindAll()
             camera = null
             provider = null
+            torchEnabled = false
         }
-    }
-}
+    }}
 
 @Composable
 private fun ObservationToggle(
