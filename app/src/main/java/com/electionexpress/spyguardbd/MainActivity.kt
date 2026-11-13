@@ -251,6 +251,8 @@ private fun SpyGuardApp() {
     val dashboardListState = rememberLazyListState()
     val dashboardScope = rememberCoroutineScope()
     var selectedDestination by remember { mutableIntStateOf(0) }
+    var opticalInspection by remember { mutableStateOf(OpticalInspection()) }
+    var opticalInspectionCompleted by remember { mutableStateOf(false) }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = Mint, background = Bg, surface = Panel)) {
         Scaffold(containerColor = Bg, topBar = {
@@ -361,12 +363,21 @@ private fun SpyGuardApp() {
                         wifiState = wifiState,
                         wifiCount = wifiNetworks.size,
                         bluetoothState = bleState,
-                        bluetoothCount = bleDevices.size
+                        bluetoothCount = bleDevices.size,
+                        opticalInspection = opticalInspection,
+                        opticalInspectionCompleted = opticalInspectionCompleted
                     )
                 }
-                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { observation ->
-                    "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
-                }) }
+                item { CameraInspectionScreen(
+                    nearbyWifiNetworks = wifiNetworks,
+                    nearbyBluetoothDevices = bleDevices.values.map { observation ->
+                        "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
+                    },
+                    observations = opticalInspection,
+                    onObservationsChange = { opticalInspection = it },
+                    inspectionCompleted = opticalInspectionCompleted,
+                    onInspectionCompletedChange = { opticalInspectionCompleted = it }
+                ) }
                 item { SensorDiagnosticsScreen() }
                 item {
                     SectionCard(
