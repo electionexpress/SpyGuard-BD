@@ -32,4 +32,20 @@ class InspectionReportTest {
         assertTrue(report.contains("স্বয়ংক্রিয় ক্যামেরা শনাক্তকরণ নয়"))
         assertTrue(report.contains("ক্যামেরার প্রমাণ নয়"))
     }
+    @Test
+    fun reportIncludesVisibleWirelessObservationsWithoutCallingThemCameras() {
+        val report = InspectionReport(
+            roomLabel = "Meeting room",
+            observedAt = "2026-11-13 12:00:00",
+            observations = OpticalInspection(),
+            nearbyWifiNetworks = listOf("Office Wi-Fi • 2412 MHz • -55 dBm"),
+            nearbyBluetoothDevices = listOf("BLE tag • -68 dBm")
+        ).toPlainText()
+
+        assertTrue(report.contains("Office Wi-Fi"))
+        assertTrue(report.contains("BLE tag"))
+        assertTrue(report.contains("এগুলো ক্যামেরা শনাক্ত করে না"))
+        assertTrue(report.contains("অফলাইন, বন্ধ, তারযুক্ত"))
+    }
+
 }
