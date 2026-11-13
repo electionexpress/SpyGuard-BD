@@ -270,6 +270,7 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
+                item { SensorDiagnosticsScreen() }
                 item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { observation ->
                     "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
                 }) }
