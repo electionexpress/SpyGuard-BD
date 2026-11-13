@@ -200,10 +200,23 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                 }
             }
 
-            Text(cameraStatus, color = CameraMint, style = MaterialTheme.typography.bodySmall)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B332B)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("●", color = CameraMint, style = MaterialTheme.typography.titleMedium)
+                    Text(cameraStatus, color = Color.White, style = MaterialTheme.typography.bodySmall)
+                }
+            }
             Spacer(Modifier.height(2.dp))
 
-            Text("অপটিক্যাল পর্যবেক্ষণ তালিকা", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text("01  •  অপটিক্যাল পর্যবেক্ষণ", color = CameraMint, style = MaterialTheme.typography.titleMedium)
             Text(
                 "নিজে দেখে পাওয়া বিষয়গুলো টিক দিন। এগুলো পর্যবেক্ষণের নোট—স্বয়ংক্রিয় ক্যামেরা শনাক্তকরণ বা ঝুঁকির স্কোর নয়।",
                 color = CameraMuted,
@@ -238,7 +251,7 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                 color = CameraMint,
                 style = MaterialTheme.typography.bodySmall
             )
-            Text("পরিদর্শন রিপোর্ট", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text("02  •  পরিদর্শন রিপোর্ট", color = CameraMint, style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = roomLabel,
                 onValueChange = { roomLabel = it },
@@ -313,7 +326,7 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                 },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("ডিভাইসে রিপোর্ট ইতিহাসে সংরক্ষণ করুন") }
-            Text("সংরক্ষিত রিপোর্ট (${savedReports.size})", color = Color.White, style = MaterialTheme.typography.titleSmall)
+            Text("03  •  সংরক্ষিত রিপোর্ট (${savedReports.size})", color = CameraMint, style = MaterialTheme.typography.titleSmall)
             if (savedReports.isEmpty()) {
                 Text("এখনো কোনো রিপোর্ট ইতিহাসে সংরক্ষণ করা হয়নি।", color = CameraMuted, style = MaterialTheme.typography.bodySmall)
             } else {
@@ -414,11 +427,17 @@ private fun ObservationToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A3029)),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
-        Text(label, color = Color.White, style = MaterialTheme.typography.bodySmall)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+            Text(label, color = Color.White, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
