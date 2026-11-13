@@ -60,6 +60,7 @@ fun CameraInspectionScreen() {
     var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
+    var zoomRatio by remember { mutableStateOf(1f) }
     var observations by remember { mutableStateOf(OpticalInspection()) }
     var screenActive by remember { mutableStateOf(true) }
 
@@ -109,6 +110,7 @@ fun CameraInspectionScreen() {
                                         CameraSelector.DEFAULT_BACK_CAMERA,
                                         preview
                                     )
+                                    zoomRatio = camera?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
                                     cameraStatus = "লাইভ প্রিভিউ চালু"
                                 } catch (error: Exception) {
                                     cameraStatus = "ক্যামেরা চালু করা যায়নি: ${error.localizedMessage ?: "অজানা সমস্যা"}"
@@ -135,6 +137,34 @@ fun CameraInspectionScreen() {
                         torchEnabled = false
                         cameraStatus = "পরিদর্শন চলমান"
                     }) { Text("ফ্ল্যাশ রিসেট") }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("জুম", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                    OutlinedButton(
+                        onClick = {
+                            val activeCamera = camera ?: return@OutlinedButton
+                            val state = activeCamera.cameraInfo.zoomState.value ?: return@OutlinedButton
+                            val next = (zoomRatio - 0.5f).coerceAtLeast(state.minZoomRatio)
+                            activeCamera.cameraControl.setZoomRatio(next)
+                            zoomRatio = next
+                        },
+                        enabled = camera != null && zoomRatio > (camera?.cameraInfo?.zoomState?.value?.minZoomRatio ?: 1f)
+                    ) { Text("−") }
+                    Text(String.format("%.1f×", zoomRatio), color = CameraMint)
+                    OutlinedButton(
+                        onClick = {
+                            val activeCamera = camera ?: return@OutlinedButton
+                            val state = activeCamera.cameraInfo.zoomState.value ?: return@OutlinedButton
+                            val next = (zoomRatio + 0.5f).coerceAtMost(state.maxZoomRatio)
+                            activeCamera.cameraControl.setZoomRatio(next)
+                            zoomRatio = next
+                        },
+                        enabled = camera != null && zoomRatio < (camera?.cameraInfo?.zoomState?.value?.maxZoomRatio ?: 1f)
+                    ) { Text("+") }
                 }
             } else {
                 Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
