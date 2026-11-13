@@ -8,6 +8,8 @@
 
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
+- **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available.
+- **Optical observation checklist:** lets the user record lens-like elements, repeatable glints from multiple angles, visible power/data connections, and independent rechecks. These are manual observations, not automatic detections or a camera-risk score.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
 
@@ -22,7 +24,7 @@
 
 ## Build
 
-GitHub Actions runs `gradle assembleDebug` on pushes and pull requests to `main`, then uploads the debug APK as the `SpyGuard-BD-debug` artifact.
+GitHub Actions runs `gradle testDebugUnitTest assembleDebug` on pushes and pull requests to `main`, then uploads the debug APK as the `SpyGuard-BD-debug` artifact.
 
 To install:
 1. Open the latest successful **Android CI** run.
@@ -38,15 +40,18 @@ To install:
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
 - [ ] BLE scan can be manually stopped and restarted.
 - [ ] Turning Bluetooth off produces a clear message.
+- [ ] Grant CAMERA permission and verify the CameraX back-camera preview starts; deny permission and verify the explanation is clear.
+- [ ] Verify torch control only enables when the device has flash hardware; leave the screen and confirm the torch turns off.
+- [ ] Test each optical observation checkbox and reset; confirm the app never labels observations as a confirmed camera.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
 
 ## Roadmap (not yet implemented)
 
-- Camera preview-assisted visual inspection and optional torch control with explicit user action.
+- Automated image-based lens/glint candidate analysis with device-specific validation and false-positive evaluation.
 - Android privacy-dashboard guidance and a local sensor-use checklist.
 - Better scan history, deduplication, and exportable reports.
-- Automated unit/instrumentation tests and a documented device test matrix.
+- Instrumentation tests and a documented physical-device test matrix.
 
 A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
