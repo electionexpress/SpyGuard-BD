@@ -128,7 +128,7 @@ private fun SpyGuardApp() {
     val bleCallback = remember {
         object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val address = result.device.address ?: "Unknown"
+                val address = try { result.device.address ?: "Unknown" } catch (_: SecurityException) { "BLE-${result.hashCode()}" }
                 val label = try {
                     result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
                 } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
@@ -184,7 +184,7 @@ private fun SpyGuardApp() {
                                 Text("  নিরাপত্তা ড্যাশবোর্ড", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             }
                             Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
-                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.7.0", color = Muted)
+                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.8.0", color = Muted)
                             Text(permissionState, color = Muted, fontSize = 12.sp)
                             OutlinedButton(onClick = { permissionLauncher.launch(requiredPermissions) }) {
                                 Text("প্রয়োজনীয় অনুমতি যাচাই")
