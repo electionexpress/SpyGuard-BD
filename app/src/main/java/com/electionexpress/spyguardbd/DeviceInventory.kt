@@ -32,7 +32,8 @@ internal fun bleObservation(address: String, detail: String): DeviceObservation 
 internal fun wifiObservation(row: String): DeviceObservation {
     val name = row.substringBefore(" • ").ifBlank { "নামহীন Wi-Fi নেটওয়ার্ক" }
     val rssi = Regex("(-?\\d+)\\s*dBm").find(row)?.groupValues?.getOrNull(1)?.toIntOrNull()
-    return DeviceObservation("wifi:$name", name, ObservationSource.WIFI_ACCESS_POINT, ObservationKind.WIFI_NETWORK,
+    val bssid = Regex("BSSID ([0-9A-Fa-f:]{17})").find(row)?.groupValues?.getOrNull(1)?.uppercase()
+    return DeviceObservation("wifi:${bssid ?: name}", name, ObservationSource.WIFI_ACCESS_POINT, ObservationKind.WIFI_NETWORK,
         rssi, "এটি Wi-Fi নেটওয়ার্ক/অ্যাক্সেস পয়েন্ট; সংযুক্ত ফোন বা ক্লায়েন্টের তালিকা নয়", "নেটওয়ার্ক উপস্থিতি")
 }
 internal fun buildNearbyInventory(ble: Map<String, String>, wifiRows: List<String>): List<DeviceObservation> =
