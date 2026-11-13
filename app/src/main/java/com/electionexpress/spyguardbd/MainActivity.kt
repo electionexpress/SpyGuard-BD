@@ -261,6 +261,10 @@ private fun SpyGuardApp() {
                             ) { Text("বন্ধ") }
                         }
                         Text(bleState, color = Muted, fontSize = 13.sp)
+                        val categoryCounts = deviceCategorySummary(bleDevices.values.map { it.substringBefore(" • ") })
+                        if (bleDevices.isNotEmpty()) {
+                            Text("নামভিত্তিক সম্ভাব্য শ্রেণি: " + categoryCounts.entries.joinToString(" • ") { "${it.key.labelBn}: ${it.value}" }, color = Mint, fontSize = 12.sp)
+                        }
                         bleDevices.entries.take(30).forEach { (address, detail) ->
                             Text("• $detail\n  $address", color = Color.White, fontSize = 12.sp)
                         }
