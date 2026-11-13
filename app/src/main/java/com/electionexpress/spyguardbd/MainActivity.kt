@@ -192,7 +192,7 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
-                item { CameraInspectionScreen() }
+                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.toList()) }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
