@@ -12,6 +12,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -70,6 +71,14 @@ fun LocalServiceDiscoveryPanel() {
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
                 status = "স্ক্যান বন্ধ করা যায়নি (কোড " + errorCode + ")"
                 try { manager.stopServiceDiscovery(this) } catch (_: Exception) {}
+            }
+        }
+    }
+
+    DisposableEffect(scanning) {
+        onDispose {
+            if (scanning) {
+                try { manager.stopServiceDiscovery(listener) } catch (_: Exception) {}
             }
         }
     }
