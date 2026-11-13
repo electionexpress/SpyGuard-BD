@@ -69,6 +69,25 @@ fun CameraInspectionScreen() {
     var observations by remember { mutableStateOf(OpticalInspection()) }
     var roomLabel by remember { mutableStateOf("") }
     var reportNotes by remember { mutableStateOf("") }
+    var pendingReportText by remember { mutableStateOf("") }
+    var reportStatus by remember { mutableStateOf("") }
+
+    val saveReportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri == null) {
+            reportStatus = "রিপোর্ট সংরক্ষণ বাতিল করা হয়েছে"
+        } else {
+            try {
+                val output = context.contentResolver.openOutputStream(uri)
+                    ?: throw IllegalStateException("ফাইল খোলা যায়নি")
+                output.use { it.write(pendingReportText.toByteArray(Charsets.UTF_8)) }
+                reportStatus = "রিপোর্ট ফাইল সংরক্ষিত হয়েছে"
+            } catch (error: Exception) {
+                reportStatus = "রিপোর্ট সংরক্ষণ করা যায়নি: ${error.localizedMessage ?: "অজানা সমস্যা"}"
+            }
+        }
+    }
     var screenActive by remember { mutableStateOf(true) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -244,6 +263,27 @@ fun CameraInspectionScreen() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("রিপোর্ট তৈরি ও শেয়ার করুন") }
+            OutlinedButton(
+                onClick = {
+                    val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+                    pendingReportText = InspectionReport(
+                        roomLabel = roomLabel,
+                        observedAt = timestamp,
+                        observations = observations,
+                        notes = reportNotes
+                    ).toPlainText()
+                    val safeName = roomLabel.trim()
+                        .replace(Regex("[^A-Za-z0-9_-]+"), "_")
+                        .trim('_')
+                        .take(30)
+                        .ifBlank { "inspection" }
+                    saveReportLauncher.launch("SpyGuard_BD_${safeName}.txt")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("TXT ফাইল হিসেবে সংরক্ষণ করুন") }
+            if (reportStatus.isNotBlank()) {
+                Text(reportStatus, color = CameraMint, style = MaterialTheme.typography.bodySmall)
+            }
             Text(
                 "রিপোর্টটি কেবল আপনার দেওয়া নোট ও হাতে টিক দেওয়া পর্যবেক্ষণ থেকে তৈরি হবে। এটি স্বয়ংক্রিয় শনাক্তকরণ নয়; শেয়ার করার আগে প্রাপক যাচাই করুন।",
                 color = CameraMuted,
