@@ -25,6 +25,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val Bg = Color(0xFF07151A)
 private val Panel = Color(0xFF10242B)
@@ -246,6 +248,10 @@ private fun SpyGuardApp() {
         }
     }
 
+    val dashboardListState = rememberLazyListState()
+    val dashboardScope = rememberCoroutineScope()
+    var selectedDestination by remember { mutableIntStateOf(0) }
+
     MaterialTheme(colorScheme = darkColorScheme(primary = Mint, background = Bg, surface = Panel)) {
         Scaffold(containerColor = Bg, topBar = {
             TopAppBar(
@@ -257,10 +263,39 @@ private fun SpyGuardApp() {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Bg)
             )
+        }, bottomBar = {
+            NavigationBar(containerColor = Color(0xFF0B1D23), contentColor = Mint) {
+                val destinations = listOf(
+                    Triple("হোম", "⌂", 0),
+                    Triple("ক্যামেরা", "◉", 2),
+                    Triple("ডিভাইস", "⌁", 4),
+                    Triple("প্রাইভেসি", "▣", 6)
+                )
+                destinations.forEachIndexed { index, destination ->
+                    NavigationBarItem(
+                        selected = selectedDestination == index,
+                        onClick = {
+                            selectedDestination = index
+                            dashboardScope.launch { dashboardListState.animateScrollToItem(destination.third) }
+                        },
+                        icon = { Text(destination.second, fontSize = 19.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text(destination.first, fontSize = 10.sp) },
+                        alwaysShowLabel = true,
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Mint,
+                            selectedTextColor = Mint,
+                            indicatorColor = Mint.copy(alpha = 0.13f),
+                            unselectedIconColor = Muted,
+                            unselectedTextColor = Muted
+                        )
+                    )
+                }
+            }
         }) { padding ->
             LazyColumn(
+                state = dashboardListState,
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(18.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 22.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item {
