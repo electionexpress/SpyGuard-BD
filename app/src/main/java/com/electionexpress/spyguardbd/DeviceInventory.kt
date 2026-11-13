@@ -41,18 +41,22 @@ internal fun buildNearbyInventory(ble: Map<String, String>, wifiRows: List<Strin
         .sortedWith(compareBy<DeviceObservation> { it.source.ordinal }.thenBy { it.displayName.lowercase() })
 
 internal fun nearbyInventoryReport(observations: List<DeviceObservation>, createdAt: String): String {
-    fun esc(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
+    fun esc(value: String): String =
+        "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
     val rows = observations.joinToString(",\n") { item ->
-        """  {"name":\${esc(item.displayName)},"source":\${esc(item.source.labelBn)},"kind":\${esc(item.kind.labelBn)},"signal_dbm":\${item.signalDbm ?: "null"},"confidence":\${esc(item.confidence)},"detail":\${esc(item.detail)}}"""
+        "    {" +
+            "\"name\":" + esc(item.displayName) +
+            ",\"source\":" + esc(item.source.labelBn) +
+            ",\"kind\":" + esc(item.kind.labelBn) +
+            ",\"signal_dbm\":" + (item.signalDbm?.toString() ?: "null") +
+            ",\"confidence\":" + esc(item.confidence) +
+            ",\"detail\":" + esc(item.detail) + "}"
     }
-    return """{
-  "app": "SpyGuard BD",
-  "report_type": "local_nearby_radio_observations",
-  "created_at": \${esc(createdAt)},
-  "limitations": "Observations are not a complete device inventory. Wi-Fi rows are access points, BLE names are self-advertised hints, and devices with radios disabled or no discoverable service may be absent.",
-  "observation_count": \${observations.size},
-  "observations": [
-$rows
-  ]
-}"""
+    return "{\n" +
+        "  \"app\": \"SpyGuard BD\",\n" +
+        "  \"report_type\": \"local_nearby_radio_observations\",\n" +
+        "  \"created_at\": " + esc(createdAt) + ",\n" +
+        "  \"limitations\": \"Observations are not a complete device inventory. Wi-Fi rows are access points, BLE names are self-advertised hints, and devices with radios disabled or no discoverable service may be absent.\",\n" +
+        "  \"observation_count\": " + observations.size + ",\n" +
+        "  \"observations\": [\n" + rows + "\n  ]\n}"
 }
