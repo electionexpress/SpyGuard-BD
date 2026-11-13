@@ -102,7 +102,7 @@ private fun SpyGuardApp() {
                             .take(30)
                             .map { result ->
                                 val name = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" }
-                                "$name • ${result.frequency} MHz • ${result.level} dBm"
+                                "$name • ${result.frequency} MHz • ${result.level} dBm • BSSID ${result.BSSID}"
                             }
                         wifiState = if (wifiNetworks.isEmpty()) "কোনো ফল পাওয়া যায়নি; Location চালু আছে কি না দেখুন" else "${wifiNetworks.size}টি দৃশ্যমান Wi-Fi নেটওয়ার্ক পাওয়া গেছে"
                     } catch (_: SecurityException) {
@@ -128,7 +128,7 @@ private fun SpyGuardApp() {
     val bleCallback = remember {
         object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val address = result.device.address ?: "Unknown"
+                val address = try { result.device.address ?: "Unknown" } catch (_: SecurityException) { "BLE-${result.hashCode()}" }
                 val label = try {
                     result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
                 } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
@@ -165,7 +165,7 @@ private fun SpyGuardApp() {
                 title = {
                     Column {
                         Text("SPYGUARD BD", fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("ব্যক্তিগত নিরাপত্তা স্ক্যানার", color = Muted, fontSize = 13.sp)
+                        Text("নিকটবর্তী ইলেকট্রনিক ডিভাইস শনাক্তকরণ", color = Muted, fontSize = 13.sp)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Bg)
@@ -184,7 +184,7 @@ private fun SpyGuardApp() {
                                 Text("  নিরাপত্তা ড্যাশবোর্ড", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                             }
                             Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
-                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.2.1", color = Muted)
+                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.8.0", color = Muted)
                             Text(permissionState, color = Muted, fontSize = 12.sp)
                             OutlinedButton(onClick = { permissionLauncher.launch(requiredPermissions) }) {
                                 Text("প্রয়োজনীয় অনুমতি যাচাই")
@@ -192,6 +192,10 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
+                item { CameraInspectionPanel() }
+                item { CameraEvidenceAssessmentPanel() }
+                item { CameraNetworkDiscoveryPanel() }
+                item { LanServiceDiscoveryPanel() }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
@@ -258,9 +262,32 @@ private fun SpyGuardApp() {
                             ) { Text("বন্ধ") }
                         }
                         Text(bleState, color = Muted, fontSize = 13.sp)
-                        bleDevices.entries.take(30).forEach { (address, detail) ->
-                            Text("• $detail\n  $address", color = Color.White, fontSize = 12.sp)
+                        val categoryCounts = deviceCategorySummary(bleDevices.values.map { it.substringBefore(" • ") })
+                        if (bleDevices.isNotEmpty()) {
+                            Text("নামভিত্তিক সম্ভাব্য শ্রেণি: " + categoryCounts.entries.joinToString(" • ") { "${it.key.labelBn}: ${it.value}" }, color = Mint, fontSize = 12.sp)
                         }
+                        bleDevices.entries.take(30).forEach { (address, detail) ->
+                            val classification = classifyNearbyDevice(detail.substringBefore(" • "))
+                            Text("• ${classification.category.labelBn} — $detail\n  $address\n  ${classification.confidenceLabel}: ${classification.explanation}", color = Color.White, fontSize = 12.sp)
+                        }
+                    }
+                }
+                item { NearbyDeviceInventoryPanel(bleDevices = bleDevices.toMap(), wifiNetworks = wifiNetworks) }
+                item { LocalServiceDiscoveryPanel() }
+                item {
+                    SectionCard(
+                        title = "আশপাশের Android ফোনের Camera Activity",
+                        subtitle = "অন্য ফোনে ক্যামেরা চালু হলেই সাধারণ SpyGuard অ্যাপ সরাসরি জানতে পারে না। Android এই তথ্য তৃতীয় পক্ষের অ্যাপকে দূর থেকে দেয় না।",
+                        icon = { Icon(Icons.Default.Radar, null, tint = Mint) }
+                    ) {
+                        Text(
+                            "বর্তমান Wi-Fi/Bluetooth স্ক্যান শুধু ডিভাইস বা বিজ্ঞাপন শনাক্ত করে—ক্যামেরা চালু আছে তা নয়। ভবিষ্যতে সম্মতিসহ Companion Mode যোগ করা যাবে: পর্যবেক্ষণাধীন Android ফোনে SpyGuard Companion ইনস্টল থাকবে; সেই ফোন নিজস্ব CameraManager status থেকে ‘camera busy’ সিগন্যাল দেবে। এটি recording-এর প্রমাণ নয় এবং BLE/Wi-Fi বন্ধ থাকলে সংকেত নাও আসতে পারে।",
+                            color = Muted, fontSize = 12.sp
+                        )
+                        Text(
+                            "এখনকার সংস্করণে এই দূরবর্তী Camera Activity alert চালু নয়। ভুল সতর্কতা এড়াতে কোনো অজানা ফোনকে ক্যামেরা চালু বলে চিহ্নিত করা হবে না।",
+                            color = Color(0xFFFFD18A), fontSize = 12.sp, fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
                 item {
