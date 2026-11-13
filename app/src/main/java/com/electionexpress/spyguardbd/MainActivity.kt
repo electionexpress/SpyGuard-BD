@@ -268,6 +268,22 @@ private fun SpyGuardApp() {
                 }
                 item {
                     SectionCard(
+                        title = "আশপাশের Android ফোনের Camera Activity",
+                        subtitle = "অন্য ফোনে ক্যামেরা চালু হলেই সাধারণ SpyGuard অ্যাপ সরাসরি জানতে পারে না। Android এই তথ্য তৃতীয় পক্ষের অ্যাপকে দূর থেকে দেয় না।",
+                        icon = { Icon(Icons.Default.Radar, null, tint = Mint) }
+                    ) {
+                        Text(
+                            "বর্তমান Wi-Fi/Bluetooth স্ক্যান শুধু ডিভাইস বা বিজ্ঞাপন শনাক্ত করে—ক্যামেরা চালু আছে তা নয়। ভবিষ্যতে সম্মতিসহ Companion Mode যোগ করা যাবে: পর্যবেক্ষণাধীন Android ফোনে SpyGuard Companion ইনস্টল থাকবে; সেই ফোন নিজস্ব CameraManager status থেকে ‘camera busy’ সিগন্যাল দেবে। এটি recording-এর প্রমাণ নয় এবং BLE/Wi-Fi বন্ধ থাকলে সংকেত নাও আসতে পারে।",
+                            color = Muted, fontSize = 12.sp
+                        )
+                        Text(
+                            "এখনকার সংস্করণে এই দূরবর্তী Camera Activity alert চালু নয়। ভুল সতর্কতা এড়াতে কোনো অজানা ফোনকে ক্যামেরা চালু বলে চিহ্নিত করা হবে না।",
+                            color = Color(0xFFFFD18A), fontSize = 12.sp, fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                item {
+                    SectionCard(
                         title = "ইনফ্রারেড আলো পরীক্ষা",
                         subtitle = "ঘরের আলো কমিয়ে সন্দেহজনক লেন্স/LED-এ নজর দিন। ফোনের ক্যামেরা কিছু IR আলো দেখাতে পারে, আবার IR-cut filter-এর কারণে নাও পারে।",
                         icon = { Icon(Icons.Default.CameraAlt, null, tint = Mint) }
