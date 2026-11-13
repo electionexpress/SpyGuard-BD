@@ -1,15 +1,29 @@
 # SpyGuard BD
 
-**Version:** 0.2.1  
-**Platform:** Android (Kotlin + Jetpack Compose)  
+**Version:** 0.3.0  
+**Platform:** Android (Kotlin + Jetpack Compose + CameraX)  
 **Purpose:** Personal privacy inspection helper. This app is not a certified counter-surveillance instrument and cannot guarantee detection of every hidden camera or recorder.
 
 ## Current capabilities
 
+- **Camera-assisted inspection (0.3.0):** live rear-camera preview, optional device torch control, and user-triggered evidence photos.
+- **Local evidence storage:** inspection photos are saved under the app-private `files/camera-evidence` directory. This feature does not upload photos to a server.
+- **Evidence status:** saved photos are labelled `Visual Candidate — manual review required`; no camera is automatically declared verified.
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
+
+## Camera verification roadmap
+
+The current release is the first camera-inspection foundation, not the complete six-engine system.
+
+1. CameraX visual inspection and local evidence capture — implemented.
+2. Optical lens/reflection analysis with a labelled test dataset — not implemented.
+3. Camera-specific AI recognition model and false-positive/false-negative evaluation — not implemented.
+4. IR compatibility checks — guidance only; automatic IR detection is not implemented.
+5. Network service discovery for supported camera protocols — not implemented.
+6. Evidence correlation, verified-device classification, and exportable inspection reports — not implemented.
 
 ## Important limits — read before relying on results
 
@@ -17,6 +31,7 @@
 - A camera or recorder that is offline, powered off, wired, recording to local storage, shielded, or not advertising over Wi-Fi/Bluetooth may not appear.
 - The phone has no general-purpose RF spectrum analyzer. Wi-Fi/BLE scans do not detect all radio frequencies or transmitters.
 - Phone cameras have IR filters and vary by model. An IR LED may be invisible; reflections can also come from ordinary objects.
+- Camera preview and a captured image do not, by themselves, prove that an object is a camera or that it is recording.
 - Android does not allow an ordinary app to silently inspect another app's microphone/camera feed. Privacy indicators and Android Privacy Dashboard are the supported ways to review recent sensor access.
 - No mobile-only method can promise 100% detection or 100% safety. For a high-risk concern, use a professional inspection and physical checks.
 
@@ -33,20 +48,17 @@ To install:
 ## Manual device QA checklist
 
 - [ ] App launches and dashboard shows correct device / Android version.
-- [ ] Denying permissions produces a clear explanation and does not crash the app.
+- [ ] Camera permission is requested only when opening camera inspection.
+- [ ] Denying camera permission leaves the rest of the dashboard usable.
+- [ ] Camera preview opens on a physical device and closes when leaving the screen.
+- [ ] Torch control is enabled only on devices with a flash unit.
+- [ ] Evidence capture creates a JPEG in app-private storage and reports failures clearly.
+- [ ] Captured evidence is not uploaded to a cloud service.
 - [ ] Wi-Fi scan with permission and Location services enabled shows available networks; empty results are not treated as proof that no devices exist.
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
 - [ ] BLE scan can be manually stopped and restarted.
-- [ ] Turning Bluetooth off produces a clear message.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
 
-## Roadmap (not yet implemented)
-
-- Camera preview-assisted visual inspection and optional torch control with explicit user action.
-- Android privacy-dashboard guidance and a local sensor-use checklist.
-- Better scan history, deduplication, and exportable reports.
-- Automated unit/instrumentation tests and a documented device test matrix.
-
-A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
+A green CI build confirms compilation and packaging, not real-world detection accuracy. Camera recognition, IR detection, network camera discovery, and false-positive/false-negative rates require separate implementation and physical-device validation.
