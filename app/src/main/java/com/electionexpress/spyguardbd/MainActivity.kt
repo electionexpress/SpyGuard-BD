@@ -66,7 +66,7 @@ private fun SpyGuardApp() {
     var wifiState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
     var wifiNetworks by remember { mutableStateOf<List<String>>(emptyList()) }
     var bleState by remember { mutableStateOf("এখনো স্ক্যান করা হয়নি") }
-    val bleDevices = remember { mutableStateMapOf<String, String>() }
+    val bleDevices = remember { mutableStateMapOf<String, BleObservation>() }
     var isBleScanning by remember { mutableStateOf(false) }
     var showIrGuide by remember { mutableStateOf(false) }
 
@@ -137,7 +137,7 @@ private fun SpyGuardApp() {
                 val label = try {
                     result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
                 } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
-                bleDevices[address] = "$label • ${result.rssi} dBm"
+                bleDevices[address] = BleObservation(address, label, result.rssi, System.currentTimeMillis())
                 bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
             }
             override fun onScanFailed(errorCode: Int) {
@@ -197,7 +197,7 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
-                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.toList()) }
+                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { "${it.displayName} • ${it.rssiDbm} dBm" }) }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
@@ -264,8 +264,12 @@ private fun SpyGuardApp() {
                             ) { Text("বন্ধ") }
                         }
                         Text(bleState, color = Muted, fontSize = 13.sp)
-                        bleDevices.entries.take(30).forEach { (address, detail) ->
-                            Text("• $detail\n  $address", color = Color.White, fontSize = 12.sp)
+                        bleDevices.values.sortedByDescending { it.rssiDbm }.take(30).forEach { observation ->
+                            Text(
+                                "• ${observation.displayName} • ${observation.rssiDbm} dBm\n  সর্বশেষ দেখা: ${formatBleLastSeen(observation.lastSeenAtMillis)}\n  ঠিকানা: ${maskBluetoothAddress(observation.address)}",
+                                color = Color.White,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 }
