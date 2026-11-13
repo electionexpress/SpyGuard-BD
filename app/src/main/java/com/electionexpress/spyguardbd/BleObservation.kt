@@ -14,8 +14,10 @@ data class BleObservation(
 /** Masks the hardware address in the UI; the raw address remains an in-memory scan key only. */
 fun maskBluetoothAddress(address: String): String {
     val parts = address.split(":")
-    if (parts.size != 6) return "ঠিকানা গোপন"
-    return "${parts[0]}:${parts[1]}:••:••:••"
+    if (parts.size != 6 || parts.any { !it.matches(Regex("[0-9A-Fa-f]{2}")) }) {
+        return "ঠিকানা গোপন"
+    }
+    return "${parts[0].uppercase(Locale.ROOT)}:${parts[1].uppercase(Locale.ROOT)}:••:••:••"
 }
 
 fun formatBleLastSeen(timestampMillis: Long): String =
