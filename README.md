@@ -43,6 +43,8 @@ To install:
 - [ ] Grant CAMERA permission and verify the CameraX back-camera preview starts; deny permission and verify the explanation is clear.
 - [ ] Verify torch control only enables when the device has flash hardware; leave the screen and confirm the torch turns off.
 - [ ] Test each optical observation checkbox and reset; confirm the app never labels observations as a confirmed camera.
+- [ ] Press Home while the torch is on; confirm the torch turns off, then return and verify preview behavior.
+- [ ] Revoke CAMERA permission in Android Settings while the app is backgrounded; return and confirm the preview is released and permission is requested again.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
