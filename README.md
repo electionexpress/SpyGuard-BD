@@ -62,6 +62,9 @@ To install:
 - [ ] Wi-Fi scan with permission and Location services enabled shows available networks; empty results are not treated as proof that no devices exist.
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
 - [ ] BLE scan can be manually stopped and restarted.
+- [ ] ONVIF discovery returns a response from a known ONVIF test camera on the same Wi-Fi LAN.
+- [ ] ONVIF discovery handles no-response, multicast-disabled and Wi-Fi-disconnected cases without crashing.
+- [ ] Confirm the app never logs into discovered endpoints or opens RTSP streams automatically.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
 - [ ] Test with Wi-Fi/Bluetooth disabled and with airplane mode to confirm offline UI behavior.
 - [ ] Check battery use during repeated scans.
