@@ -10,7 +10,7 @@
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
 - **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available, plus device-supported manual zoom controls.
 - **Optical observation checklist:** lets the user record lens-like elements, repeatable glints from multiple angles, visible power/data connections, and independent rechecks. These are manual observations, not automatic detections or a camera-risk score.
-- **Shareable inspection report:** creates a user-authored plain-text report with local timestamp, room label, checklist values and optional notes. The user can share through Android's share sheet or explicitly save a `.txt` file using Android's document picker; reports are not silently uploaded or stored by the app.
+- **Inspection report history:** creates user-authored plain-text reports with local timestamp, room label, checklist values and notes. Users can share through Android's share sheet, export a `.txt` file through the document picker, or explicitly save a copy in app-private local history and later share/delete it. History is not uploaded or synced.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
 
@@ -48,6 +48,7 @@ To install:
 - [ ] Create a report with a room label and notes; verify timestamp and checklist values, then share only to a destination selected by the user.
 - [ ] Create a report with blank optional fields; verify the report clearly labels them as unspecified and does not claim a camera was detected.
 - [ ] Save a report as `.txt` through Android's document picker; verify the selected destination contains the UTF-8 report and cancelling does not create a file.
+- [ ] Explicitly save a report to local history; verify it remains after leaving and reopening the screen, can be shared, and can be deleted.
 - [ ] Press Home while the torch is on; confirm the torch turns off, then return and verify preview behavior.
 - [ ] Revoke CAMERA permission in Android Settings while the app is backgrounded; return and confirm the preview is released and permission is requested again.
 - [ ] Rotate the screen / background and return to confirm no crash or stuck scan.
@@ -58,7 +59,7 @@ To install:
 
 - Automated image-based lens/glint candidate analysis with device-specific validation and false-positive evaluation.
 - Android privacy-dashboard guidance and a local sensor-use checklist.
-- Local report history, optional user-approved file export, and scan-result deduplication.
+- Scan-result deduplication and linking user-selected Wi-Fi/BLE observations to a report.
 - Instrumentation tests and a documented physical-device test matrix.
 
 A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
