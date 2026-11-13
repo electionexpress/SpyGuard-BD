@@ -12,6 +12,13 @@ class BleObservationTest {
     @Test
     fun hidesMalformedAddress() {
         assertEquals("ঠিকানা গোপন", maskBluetoothAddress("unknown"))
+        assertEquals("ঠিকানা গোপন", maskBluetoothAddress("AA:BB:CC:DD:EE:GG"))
+        assertEquals("ঠিকানা গোপন", maskBluetoothAddress("AA:BB:CC:DD:EE"))
+    }
+
+    @Test
+    fun normalizesValidAddressBeforeMasking() {
+        assertEquals("AA:BB:••:••:••", maskBluetoothAddress("aa:bb:cc:dd:ee:ff"))
     }
 
     @Test
