@@ -239,7 +239,9 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
-                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { "${it.displayName} • ${it.rssiDbm} dBm" }) }
+                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { observation ->
+                    "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
+                }) }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
