@@ -47,6 +47,7 @@ class InspectionReportTest {
         ).toPlainText()
 
         assertTrue(report.contains("Office Wi-Fi"))
+        assertTrue(report.contains("স্ক্যান সময়"))
         assertTrue(report.contains("BLE tag"))
         assertTrue(report.contains("সাম্প্রতিক সিগনাল"))
         assertTrue(report.contains("12:00:05"))
