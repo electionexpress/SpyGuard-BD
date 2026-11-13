@@ -195,6 +195,57 @@ private fun SpyGuardApp() {
         }
     }
 
+    // Request only the permissions needed for nearby-device scanning on first launch.
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(requiredPermissions)
+    }
+
+    // Once the user grants access, start a bounded Wi-Fi + BLE scan automatically.
+    LaunchedEffect(permissionState) {
+        if (permissionState == "প্রয়োজনীয় অনুমতি দেওয়া হয়েছে") {
+            if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                wifi.isWifiEnabled && isLocationServiceEnabled(context)
+            ) {
+                try {
+                    wifi.startScan()
+                    wifiState = "স্বয়ংক্রিয় Wi-Fi স্ক্যান চলছে"
+                } catch (_: SecurityException) {
+                    wifiState = "Wi-Fi স্ক্যানের অনুমতি নেই"
+                } catch (_: Exception) {
+                    wifiState = "Wi-Fi স্ক্যান শুরু করা যায়নি"
+                }
+            } else {
+                wifiState = "Wi-Fi/Location অনুপলব্ধ — এই অংশ পরীক্ষা করা যায়নি"
+            }
+
+            val scanPermissionsGranted = if (Build.VERSION.SDK_INT >= 31) {
+                hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
+                    hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            } else {
+                hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            if (scanPermissionsGranted && bluetoothAdapter?.isEnabled == true) {
+                try {
+                    val scanner = bluetoothAdapter.bluetoothLeScanner
+                    if (scanner != null && !isBleScanning) {
+                        bleDevices.clear()
+                        scanner.startScan(bleCallback)
+                        isBleScanning = true
+                        bleState = "স্বয়ংক্রিয় BLE স্ক্যান চলছে — ১৫ সেকেন্ডের মধ্যে বন্ধ হবে"
+                    } else if (scanner == null) {
+                        bleState = "এই ফোনে BLE scanner নেই"
+                    }
+                } catch (_: SecurityException) {
+                    bleState = "Bluetooth স্ক্যানের অনুমতি নেই"
+                } catch (_: Exception) {
+                    bleState = "Bluetooth স্ক্যান শুরু করা যায়নি"
+                }
+            } else {
+                bleState = "Bluetooth বন্ধ/অনুপলব্ধ বা অনুমতি নেই"
+            }
+        }
+    }
+
     MaterialTheme(colorScheme = darkColorScheme(primary = Mint, background = Bg, surface = Panel)) {
         Scaffold(containerColor = Bg, topBar = {
             TopAppBar(
@@ -270,9 +321,18 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
+                item {
+                    AutoScanSummaryCard(
+                        wifiState = wifiState,
+                        wifiCount = wifiNetworks.size,
+                        bluetoothState = bleState,
+                        bluetoothCount = bleDevices.size
+                    )
+                }
                 item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { observation ->
                     "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
                 }) }
+                item { SensorDiagnosticsScreen() }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
