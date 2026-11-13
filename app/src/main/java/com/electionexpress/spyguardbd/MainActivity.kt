@@ -115,7 +115,7 @@ private fun SpyGuardApp() {
                                     )
                                 }
                             ).map { observation ->
-                                "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm"
+                                "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm • স্ক্যান সময় ${formatBleLastSeen(System.currentTimeMillis())}"
                             }
                         }
                         wifiState = wifiScanStatus(resultsUpdated, wifiNetworks.size)
