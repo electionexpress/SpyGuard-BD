@@ -1,6 +1,6 @@
 # SpyGuard BD
 
-**Version:** 0.4.0  
+**Version:** 0.5.0  
 **Platform:** Android (Kotlin + Jetpack Compose + CameraX)  
 **Purpose:** Personal privacy inspection helper. This app is not a certified counter-surveillance instrument and cannot guarantee detection of every hidden camera or recorder.
 
@@ -11,6 +11,7 @@
 - **Evidence status:** saved photos are labelled `Visual Candidate — manual review required`; no camera is automatically declared verified.
 - **Conservative evidence checklist (0.4.0):** combines manual visual observations with manually confirmed camera-specific protocol evidence and direct stream/recording evidence. Wi-Fi/BLE presence, IR glow, or reflection alone cannot produce a verified/active status.
 - **Evidence policy unit tests:** tests ensure a camera is not marked verified or active without the required independent evidence.
+- **Local ONVIF discovery (0.5.0):** user-initiated, bounded WS-Discovery multicast probe on the current Wi-Fi LAN; displays responding source IP and advertised HTTP(S) service addresses. No IP-range sweep, login, RTSP stream opening, or cloud upload.
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
@@ -25,12 +26,13 @@ The current release is the first camera-inspection foundation, not the complete 
 3. Optical lens/reflection analysis with a labelled test dataset — not implemented.
 4. Camera-specific AI recognition model and false-positive/false-negative evaluation — not implemented.
 5. IR compatibility checks — guidance only; automatic IR detection is not implemented.
-6. Network service discovery for supported camera protocols — not implemented; protocol evidence is currently a manual checklist input.
-7. Automatic evidence correlation and exportable inspection reports — not implemented.
+6. Local ONVIF WS-Discovery probe — implemented as an opt-in local-network discovery feature; physical-router/camera compatibility testing remains required.
+7. RTSP stream validation, authenticated camera inventory, optical/AI recognition and automatic evidence correlation — not implemented.
 
 ## Important limits — read before relying on results
 
 - A Wi-Fi or Bluetooth device is not necessarily a camera. Most scan results cannot identify device purpose.
+- ONVIF discovery only finds devices that respond to WS-Discovery on the same LAN. Multicast filtering, client isolation, VLANs, disabled ONVIF, unsupported devices, or wired/offline devices can prevent discovery.
 - A camera or recorder that is offline, powered off, wired, recording to local storage, shielded, or not advertising over Wi-Fi/Bluetooth may not appear.
 - The phone has no general-purpose RF spectrum analyzer. Wi-Fi/BLE scans do not detect all radio frequencies or transmitters.
 - Phone cameras have IR filters and vary by model. An IR LED may be invisible; reflections can also come from ordinary objects.
