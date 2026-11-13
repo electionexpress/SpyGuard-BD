@@ -131,19 +131,18 @@ fun CameraNetworkDiscoveryPanel() {
                     results.clear()
                     status = "ONVIF multicast probe পাঠানো হচ্ছে…"
                     thread(name = "spyguard-onvif-discovery") {
-                        val discovered = try {
-                            discoverOnvifDevices(context.applicationContext)
+                        val outcome = try {
+                            Pair(discoverOnvifDevices(context.applicationContext), null as String?)
                         } catch (error: Exception) {
-                            status = "স্ক্যান ব্যর্থ: ${error.localizedMessage ?: "নেটওয়ার্ক ত্রুটি"}"
-                            emptyList()
+                            Pair(emptyList(), "স্ক্যান ব্যর্থ: ${error.localizedMessage ?: "নেটওয়ার্ক ত্রুটি"}")
                         }
                         android.os.Handler(android.os.Looper.getMainLooper()).post {
                             results.clear()
-                            results.addAll(discovered)
-                            if (discovered.isEmpty() && status.startsWith("স্ক্যান ব্যর্থ").not()) {
-                                status = "এই স্ক্যানে কোনো ONVIF উত্তর পাওয়া যায়নি। এটি ক্যামেরা নেই—এমন প্রমাণ নয়।"
-                            } else if (discovered.isNotEmpty()) {
-                                status = "${discovered.size}টি ONVIF response পাওয়া গেছে; প্রতিটি ডিভাইস আলাদাভাবে যাচাই করুন।"
+                            results.addAll(outcome.first)
+                            status = outcome.second ?: if (outcome.first.isEmpty()) {
+                                "এই স্ক্যানে কোনো ONVIF উত্তর পাওয়া যায়নি। এটি ক্যামেরা নেই—এমন প্রমাণ নয়।"
+                            } else {
+                                "${outcome.first.size}টি ONVIF response পাওয়া গেছে; প্রতিটি ডিভাইস আলাদাভাবে যাচাই করুন।"
                             }
                             scanning = false
                         }
