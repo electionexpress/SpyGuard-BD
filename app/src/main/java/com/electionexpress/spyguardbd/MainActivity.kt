@@ -115,7 +115,7 @@ private fun SpyGuardApp() {
                                 "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm"
                             }
                         }
-                        wifiState = wifiScanStatus(resultsUpdated, if (resultsUpdated) wifiNetworks.size else wifi.scanResults.size)
+                        wifiState = wifiScanStatus(resultsUpdated, wifiNetworks.size)
                     } catch (_: SecurityException) {
                         wifiState = "অনুমতি নেই — Location permission দিন"
                     }
