@@ -42,6 +42,7 @@ To install:
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
 - [ ] On Android 12+, grant BLUETOOTH_SCAN and BLUETOOTH_CONNECT together; deny either permission and confirm the app explains why scanning cannot proceed.
 - [ ] BLE scan can be manually stopped and restarted.
+- [ ] Trigger BLE scan failure conditions where possible and confirm Android failure codes are translated into actionable Bengali guidance while retaining the raw code for troubleshooting.
 - [ ] Create a report after BLE observations and confirm each entry includes its signal strength, freshness label, and last-seen clock time; treat these as observations, not identity proof.
 - [ ] BLE observation freshness changes from live to recent to stale at the documented time thresholds; advertised names are not presented as verified device models.
 - [ ] Confirm BLE hardware addresses are masked, malformed addresses are fully hidden, and lowercase valid addresses are normalized before display.
