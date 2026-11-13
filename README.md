@@ -1,6 +1,6 @@
 # SpyGuard BD
 
-**Version:** 0.5.0  
+**Version:** 0.6.0  
 **Platform:** Android (Kotlin + Jetpack Compose + CameraX)  
 **Purpose:** Personal privacy inspection helper. This app is not a certified counter-surveillance instrument and cannot guarantee detection of every hidden camera or recorder.
 
@@ -11,12 +11,18 @@
 - **Evidence status:** saved photos are labelled `Visual Candidate — manual review required`; no camera is automatically declared verified.
 - **Conservative evidence checklist (0.4.0):** combines manual visual observations with manually confirmed camera-specific protocol evidence and direct stream/recording evidence. Wi-Fi/BLE presence, IR glow, or reflection alone cannot produce a verified/active status.
 - **Evidence policy unit tests:** tests ensure a camera is not marked verified or active without the required independent evidence.
-- **Local ONVIF discovery (0.5.0):** user-initiated, bounded WS-Discovery multicast probe on the current Wi-Fi LAN; displays responding source IP and advertised HTTP(S) service addresses. No IP-range sweep, login, RTSP stream opening, or cloud upload.
+- **Local ONVIF discovery (0.6.0):** user-initiated, bounded WS-Discovery multicast probe on the current Wi-Fi LAN; displays responding source IP and advertised HTTP(S) service addresses. No IP-range sweep, login, RTSP stream opening, or cloud upload.
 - **Wi-Fi scan:** lists nearby networks visible to Android, with SSID, frequency and RSSI when the OS permits access.
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows device label/address when available and signal strength (RSSI). Scan automatically stops after 15 seconds.
 - **Nearby-device category hints:** BLE advertised names are conservatively grouped into possible phone/tablet, computer, network equipment, camera/surveillance, audio, wearable, or unknown categories. These are name-based hints only, not verified make/model or proof of device purpose; unnamed/randomized advertisements remain unknown.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
+
+
+
+## Nearby electronic-device discovery (0.6.0)
+
+The primary workflow is now nearby electronic-device inspection. The app combines Android-visible Wi-Fi scan results, BLE advertisements, and same-LAN ONVIF WS-Discovery responses as separate evidence sources. BLE names receive conservative category hints (possible phone/tablet, computer, network equipment, camera/surveillance, audio, wearable, or unknown); the app does not claim a verified model from a broadcast name. Wi-Fi SSIDs are access points/networks, not a list of connected client phones. Android does not expose a universal nearby-device inventory or arbitrary phone camera state to ordinary apps. A device with radios disabled, no discoverable advertisement, or no supported LAN service may remain invisible. For reliable inventory of a device, it must cooperate or be explicitly paired; Companion mode is not yet implemented.
 
 ## Nearby Android phone camera-activity detection
 
@@ -31,7 +37,7 @@ A future opt-in **SpyGuard Companion Mode** can provide a limited cooperative si
 - Bluetooth/Wi-Fi disabled, background restrictions, permission revocation, battery optimisation, radio range, or companion termination can prevent delivery. No signal means **unknown**, not safe.
 - Pairing must use explicit consent, rotating identifiers, authenticated messages, minimal retention, and a visible stop-sharing control. No covert installation or monitoring is supported.
 
-This companion protocol is a roadmap item, not an implemented feature in v0.5.0. The dashboard explains this limitation so that normal nearby-device detections are not misrepresented as camera activity.
+This companion protocol is a roadmap item, not an implemented feature in v0.6.0. The dashboard explains this limitation so that normal nearby-device detections are not misrepresented as camera activity.
 
 ## Camera verification roadmap
 
