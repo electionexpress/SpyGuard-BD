@@ -16,7 +16,9 @@ class InspectionReportTest {
         assertTrue(report.contains("Guest room"))
         assertTrue(report.contains("2026-11-13T09:00:00+06:00"))
         assertTrue(report.contains("Shelf near the window"))
+        assertTrue(report.contains("হাতে করা পর্যবেক্ষণ (1/4)"))
         assertTrue(report.contains("লেন্সের মতো উপাদান: হ্যাঁ"))
+        assertTrue(report.contains("একটি বিষয় নথিভুক্ত হয়েছে"))
     }
 
     @Test
@@ -31,6 +33,8 @@ class InspectionReportTest {
         assertTrue(report.contains("কোনো অতিরিক্ত নোট নেই"))
         assertTrue(report.contains("স্বয়ংক্রিয় ক্যামেরা শনাক্তকরণ নয়"))
         assertTrue(report.contains("ক্যামেরার প্রমাণ নয়"))
+        assertTrue(report.contains("হাতে করা পর্যবেক্ষণ (0/4)"))
+        assertTrue(report.contains("এটি নিরাপদ হওয়ার প্রমাণ নয়"))
     }
     @Test
     fun reportIncludesVisibleWirelessObservationsWithoutCallingThemCameras() {
