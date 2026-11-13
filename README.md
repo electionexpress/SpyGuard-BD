@@ -1,6 +1,6 @@
 # SpyGuard BD
 
-**Version:** 0.7.0  
+**Version:** 0.8.0  
 **Platform:** Android (Kotlin + Jetpack Compose + CameraX)  
 **Purpose:** Personal privacy inspection helper. This app is not a certified counter-surveillance instrument and cannot guarantee detection of every hidden camera or recorder.
 
@@ -30,6 +30,10 @@ The primary workflow is now nearby electronic-device inspection. The app combine
 The dashboard combines current BLE observations and Android-visible Wi-Fi scan results into a single local inventory view. Each row preserves its observation source, available RSSI, conservative category hint, and an explanation. Wi-Fi entries are access points/networks, not connected client devices. BLE device names are self-advertised and can be absent, randomized, misleading, or spoofed; name-based categories are not verified model identification. Duplicate rows are removed by source key within the current scan snapshot.
 
 Users can share a JSON report for the current in-memory scan session using Android's share sheet. The report is generated locally and is not automatically uploaded. It records the scan timestamp and explicit coverage limitations. It does not persist a surveillance history or claim that absent devices are safe.
+
+## Local DNS-SD service discovery (0.8.0)
+
+A bounded 12-second Android NSD/DNS-SD scan looks for `_http._tcp.` services advertised on the current local network and resolves their service name, host address and port when the platform permits. This can reveal some web-enabled routers, printers, appliances or cameras, but it is not a general device inventory and a discovered HTTP service is not evidence of surveillance. Multicast filtering, client isolation, VLANs, unsupported services and non-advertising devices can prevent discovery. The scan is user-initiated and does not authenticate to or open discovered services.
 
 ## Nearby Android phone camera-activity detection
 
