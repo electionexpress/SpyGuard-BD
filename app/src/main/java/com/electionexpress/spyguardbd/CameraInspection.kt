@@ -52,7 +52,7 @@ private val CameraMuted = Color(0xFFB8C9C2)
 
 /** User-controlled optical inspection preview; it does not claim to identify cameras. */
 @Composable
-fun CameraInspectionScreen() {
+fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearbyBluetoothDevices: List<String> = emptyList()) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var permissionGranted by remember {
@@ -233,6 +233,11 @@ fun CameraInspectionScreen() {
                 modifier = Modifier.fillMaxWidth()
             ) { Text("পর্যবেক্ষণ তালিকা রিসেট") }
 
+            Text(
+                "সর্বশেষ স্ক্যানের ফল: Wi-Fi ${nearbyWifiNetworks.size}টি • Bluetooth LE ${nearbyBluetoothDevices.size}টি",
+                color = CameraMint,
+                style = MaterialTheme.typography.bodySmall
+            )
             Text("পরিদর্শন রিপোর্ট", color = Color.White, style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = roomLabel,
@@ -255,7 +260,9 @@ fun CameraInspectionScreen() {
                         roomLabel = roomLabel,
                         observedAt = timestamp,
                         observations = observations,
-                        notes = reportNotes
+                        notes = reportNotes,
+                        nearbyWifiNetworks = nearbyWifiNetworks,
+                        nearbyBluetoothDevices = nearbyBluetoothDevices
                     )
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -272,7 +279,9 @@ fun CameraInspectionScreen() {
                         roomLabel = roomLabel,
                         observedAt = timestamp,
                         observations = observations,
-                        notes = reportNotes
+                        notes = reportNotes,
+                        nearbyWifiNetworks = nearbyWifiNetworks,
+                        nearbyBluetoothDevices = nearbyBluetoothDevices
                     ).toPlainText()
                     val safeName = roomLabel.trim()
                         .replace(Regex("[^A-Za-z0-9_-]+"), "_")
@@ -291,7 +300,9 @@ fun CameraInspectionScreen() {
                             roomLabel = roomLabel,
                             observedAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
                             observations = observations,
-                            notes = reportNotes
+                            notes = reportNotes,
+                        nearbyWifiNetworks = nearbyWifiNetworks,
+                        nearbyBluetoothDevices = nearbyBluetoothDevices
                         )
                         reportStore.save(report, timestamp)
                         savedReports = reportStore.list()
