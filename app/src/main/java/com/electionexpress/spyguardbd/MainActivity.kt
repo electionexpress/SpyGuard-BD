@@ -142,12 +142,15 @@ private fun SpyGuardApp() {
     val bleCallback = remember {
         object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val address = result.device.address ?: "Unknown"
-                val label = try {
-                    result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
-                } catch (_: SecurityException) { "নাম-অনুমতি নেই" }
-                bleDevices[address] = BleObservation(address, label, result.rssi, System.currentTimeMillis())
-                bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
+                try {
+                    val address = result.device.address ?: "Unknown"
+                    val label = result.device.name ?: result.scanRecord?.deviceName ?: "নামহীন Bluetooth ডিভাইস"
+                    bleDevices[address] = BleObservation(address, label, result.rssi, System.currentTimeMillis())
+                    bleState = "${bleDevices.size}টি Bluetooth বিজ্ঞাপন পাওয়া গেছে"
+                } catch (_: SecurityException) {
+                    isBleScanning = false
+                    bleState = "Bluetooth ডিভাইসের তথ্য পড়ার অনুমতি নেই — Nearby devices অনুমতি যাচাই করুন"
+                }
             }
             override fun onScanFailed(errorCode: Int) {
                 isBleScanning = false
@@ -260,11 +263,23 @@ private fun SpyGuardApp() {
                         Button(onClick = {
                             if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                                 permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
+                            } else if (!wifi.isWifiEnabled) {
+                                wifiState = "Wi-Fi বন্ধ — ফোনের Wi-Fi চালু করে আবার চেষ্টা করুন"
+                            } else if (!isLocationServiceEnabled(context)) {
+                                wifiState = "Android-এর Location বন্ধ — Location চালু করে আবার চেষ্টা করুন"
                             } else {
                                 try {
-                                    wifiState = if (wifi.startScan()) "স্ক্যানের অনুরোধ পাঠানো হয়েছে; ফল নিশ্চিত হলে আপডেট হবে" else "Android নতুন স্ক্যান গ্রহণ করেনি; দেখানো ফল পুরোনো হতে পারে"
+                                    val accepted = wifi.startScan()
+                                    wifiState = wifiScanStartStatus(
+                                        hasLocationPermission = true,
+                                        wifiEnabled = true,
+                                        locationEnabled = true,
+                                        requestAccepted = accepted
+                                    )
                                 } catch (_: SecurityException) {
-                                    wifiState = "অনুমতি নেই"
+                                    wifiState = "অনুমতি প্রত্যাখ্যাত — অ্যাপের Location permission যাচাই করুন"
+                                } catch (_: Exception) {
+                                    wifiState = "Android Wi-Fi scan শুরু করতে পারেনি — কিছুক্ষণ পরে আবার চেষ্টা করুন"
                                 }
                             }
                         }, modifier = Modifier.fillMaxWidth()) { Text("Wi-Fi স্ক্যান শুরু") }
