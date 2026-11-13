@@ -273,6 +273,7 @@ private fun SpyGuardApp() {
                     }
                 }
                 item { NearbyDeviceInventoryPanel(bleDevices = bleDevices.toMap(), wifiNetworks = wifiNetworks) }
+                item { LocalServiceDiscoveryPanel() }
                 item {
                     SectionCard(
                         title = "আশপাশের Android ফোনের Camera Activity",
