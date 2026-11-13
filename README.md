@@ -25,6 +25,12 @@
 
 The primary workflow is now nearby electronic-device inspection. The app combines Android-visible Wi-Fi scan results, BLE advertisements, and same-LAN ONVIF WS-Discovery responses as separate evidence sources. BLE names receive conservative category hints (possible phone/tablet, computer, network equipment, camera/surveillance, audio, wearable, or unknown); the app does not claim a verified model from a broadcast name. Wi-Fi SSIDs are access points/networks, not a list of connected client phones. Android does not expose a universal nearby-device inventory or arbitrary phone camera state to ordinary apps. A device with radios disabled, no discoverable advertisement, or no supported LAN service may remain invisible. For reliable inventory of a device, it must cooperate or be explicitly paired; Companion mode is not yet implemented.
 
+## Unified nearby device inventory (0.7.0)
+
+The dashboard combines current BLE observations and Android-visible Wi-Fi scan results into a single local inventory view. Each row preserves its observation source, available RSSI, conservative category hint, and an explanation. Wi-Fi entries are access points/networks, not connected client devices. BLE device names are self-advertised and can be absent, randomized, misleading, or spoofed; name-based categories are not verified model identification. Duplicate rows are removed by source key within the current scan snapshot.
+
+Users can share a JSON report for the current in-memory scan session using Android's share sheet. The report is generated locally and is not automatically uploaded. It records the scan timestamp and explicit coverage limitations. It does not persist a surveillance history or claim that absent devices are safe.
+
 ## Nearby Android phone camera-activity detection
 
 A standard Android app cannot remotely query whether an arbitrary nearby Android phone has opened or is using its camera. Wi-Fi SSIDs, BLE advertisements, device names, RSSI, and ordinary network presence are not evidence that a camera is active. The current app therefore does **not** generate a “nearby phone camera active” alert from those signals.
