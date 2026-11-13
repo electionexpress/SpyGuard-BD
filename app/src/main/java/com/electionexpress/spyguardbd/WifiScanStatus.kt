@@ -14,3 +14,20 @@ fun wifiScanStatus(resultsUpdated: Boolean, resultCount: Int): String {
         "নতুন স্ক্যানে ${resultCount}টি দৃশ্যমান Wi-Fi নেটওয়ার্ক পাওয়া গেছে"
     }
 }
+
+/**
+ * Explains why a new Wi-Fi scan could not be requested.
+ * A rejected request does not mean that no networks exist; Android may throttle scans.
+ */
+fun wifiScanStartStatus(
+    hasLocationPermission: Boolean,
+    wifiEnabled: Boolean,
+    locationEnabled: Boolean,
+    requestAccepted: Boolean
+): String = when {
+    !hasLocationPermission -> "Location permission দেওয়া নেই — অনুমতি দিন"
+    !wifiEnabled -> "Wi-Fi বন্ধ — ফোনের Wi-Fi চালু করুন"
+    !locationEnabled -> "Android-এর Location বন্ধ — Location চালু করুন"
+    !requestAccepted -> "Android নতুন স্ক্যান গ্রহণ করেনি — scan throttling বা system policy হতে পারে; পুরোনো ফল দেখানো হতে পারে"
+    else -> "স্ক্যানের অনুরোধ গৃহীত — নতুন ফল আসা পর্যন্ত অপেক্ষা করুন"
+}
