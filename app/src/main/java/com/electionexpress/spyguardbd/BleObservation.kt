@@ -20,3 +20,21 @@ fun maskBluetoothAddress(address: String): String {
 
 fun formatBleLastSeen(timestampMillis: Long): String =
     SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(timestampMillis))
+
+/** Freshness describes advertisement recency, not device identity or camera status. */
+enum class BleFreshness { LIVE, RECENT, STALE }
+
+fun classifyBleFreshness(lastSeenAtMillis: Long, nowMillis: Long): BleFreshness {
+    val ageMillis = (nowMillis - lastSeenAtMillis).coerceAtLeast(0L)
+    return when {
+        ageMillis < 30_000L -> BleFreshness.LIVE
+        ageMillis < 120_000L -> BleFreshness.RECENT
+        else -> BleFreshness.STALE
+    }
+}
+
+fun bleFreshnessLabel(freshness: BleFreshness): String = when (freshness) {
+    BleFreshness.LIVE -> "সাম্প্রতিক সিগনাল"
+    BleFreshness.RECENT -> "কিছুক্ষণ আগে দেখা"
+    BleFreshness.STALE -> "পুরোনো পর্যবেক্ষণ"
+}
