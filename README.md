@@ -38,11 +38,14 @@ To install:
 
 - [ ] App launches and dashboard shows correct device / Android version.
 - [ ] Denying permissions produces a clear explanation and does not crash the app.
-- [ ] Wi-Fi scan with permission and Location services enabled shows available networks; empty results are not treated as proof that no devices exist.
+- [ ] Wi-Fi scan checks Location permission, Wi-Fi state, and Android Location service before requesting a scan; explain which prerequisite is missing.
+- [ ] A rejected Wi-Fi scan request is reported as not accepted (possible Android throttling/system policy), never as an empty scan; cached results remain clearly labelled.
+- [ ] A fresh Wi-Fi result broadcast with zero networks is distinguished from cached or failed results.
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
 - [ ] On Android 12+, grant BLUETOOTH_SCAN and BLUETOOTH_CONNECT together; deny either permission and confirm the app explains why scanning cannot proceed.
 - [ ] BLE scan can be manually stopped and restarted.
 - [ ] Trigger BLE scan failure conditions where possible and confirm Android failure codes are translated into actionable Bengali guidance while retaining the raw code for troubleshooting.
+- [ ] Revoke Nearby devices permission during BLE observation where possible; confirm callback access errors are handled without crashing.
 - [ ] Create a report after BLE observations and confirm each entry includes its signal strength, freshness label, and last-seen clock time; treat these as observations, not identity proof.
 - [ ] BLE observation freshness changes from live to recent to stale at the documented time thresholds; advertised names are not presented as verified device models.
 - [ ] Confirm BLE hardware addresses are masked, malformed addresses are fully hidden, and lowercase valid addresses are normalized before display.
@@ -66,8 +69,6 @@ To install:
 ## Roadmap (not yet implemented)
 
 - Automated image-based lens/glint candidate analysis with device-specific validation and false-positive evaluation.
-- Android privacy-dashboard guidance and a local sensor-use checklist.
-- User-selectable Wi-Fi/BLE observations and scan-session timestamps in reports.
 - Instrumentation tests and a documented physical-device test matrix.
 
 A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
