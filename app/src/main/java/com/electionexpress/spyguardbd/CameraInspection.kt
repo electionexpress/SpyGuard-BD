@@ -71,6 +71,8 @@ fun CameraInspectionScreen() {
     var reportNotes by remember { mutableStateOf("") }
     var pendingReportText by remember { mutableStateOf("") }
     var reportStatus by remember { mutableStateOf("") }
+    val reportStore = remember(context) { InspectionReportStore(context.filesDir) }
+    var savedReports by remember { mutableStateOf(reportStore.list()) }
 
     val saveReportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
@@ -281,6 +283,62 @@ fun CameraInspectionScreen() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("TXT ফাইল হিসেবে সংরক্ষণ করুন") }
+            OutlinedButton(
+                onClick = {
+                    try {
+                        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                        val report = InspectionReport(
+                            roomLabel = roomLabel,
+                            observedAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+                            observations = observations,
+                            notes = reportNotes
+                        )
+                        reportStore.save(report, timestamp)
+                        savedReports = reportStore.list()
+                        reportStatus = "রিপোর্টটি এই ডিভাইসের ব্যক্তিগত ইতিহাসে সংরক্ষিত হয়েছে"
+                    } catch (error: Exception) {
+                        reportStatus = "ইতিহাসে সংরক্ষণ করা যায়নি: \${error.localizedMessage ?: "অজানা সমস্যা"}"
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("ডিভাইসে রিপোর্ট ইতিহাসে সংরক্ষণ করুন") }
+            Text("সংরক্ষিত রিপোর্ট (\${savedReports.size})", color = Color.White, style = MaterialTheme.typography.titleSmall)
+            if (savedReports.isEmpty()) {
+                Text("এখনো কোনো রিপোর্ট ইতিহাসে সংরক্ষণ করা হয়নি।", color = CameraMuted, style = MaterialTheme.typography.bodySmall)
+            } else {
+                savedReports.forEach { saved ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A3029)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(saved.fileName, color = Color.White, style = MaterialTheme.typography.labelLarge)
+                            Text(saved.content.lineSequence().take(3).joinToString("\n"), color = CameraMuted, style = MaterialTheme.typography.bodySmall)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = {
+                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, saved.content)
+                                    }
+                                    context.startActivity(Intent.createChooser(shareIntent, "সংরক্ষিত রিপোর্ট শেয়ার করুন"))
+                                }) { Text("শেয়ার") }
+                                OutlinedButton(onClick = {
+                                    if (reportStore.delete(saved.fileName)) {
+                                        savedReports = reportStore.list()
+                                        reportStatus = "রিপোর্ট ইতিহাস থেকে মুছে ফেলা হয়েছে"
+                                    } else {
+                                        reportStatus = "রিপোর্টটি মুছে ফেলা যায়নি"
+                                    }
+                                }) { Text("মুছুন") }
+                            }
+                        }
+                    }
+                }
+            }
             if (reportStatus.isNotBlank()) {
                 Text(reportStatus, color = CameraMint, style = MaterialTheme.typography.bodySmall)
             }
