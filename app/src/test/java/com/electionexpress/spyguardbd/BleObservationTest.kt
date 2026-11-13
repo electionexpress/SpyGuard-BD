@@ -18,4 +18,16 @@ class BleObservationTest {
     fun formatsLastSeenAsClockTime() {
         assertEquals(8, formatBleLastSeen(0L).length)
     }
+
+    @Test
+    fun classifiesBleObservationFreshness() {
+        assertEquals(BleFreshness.LIVE, classifyBleFreshness(90_000L, 100_000L))
+        assertEquals(BleFreshness.RECENT, classifyBleFreshness(50_000L, 100_000L))
+        assertEquals(BleFreshness.STALE, classifyBleFreshness(0L, 120_000L))
+    }
+
+    @Test
+    fun futureTimestampIsClampedToLive() {
+        assertEquals(BleFreshness.LIVE, classifyBleFreshness(110_000L, 100_000L))
+    }
 }
