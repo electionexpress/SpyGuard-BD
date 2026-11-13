@@ -17,6 +17,21 @@
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
 
+## Nearby Android phone camera-activity detection
+
+A standard Android app cannot remotely query whether an arbitrary nearby Android phone has opened or is using its camera. Wi-Fi SSIDs, BLE advertisements, device names, RSSI, and ordinary network presence are not evidence that a camera is active. The current app therefore does **not** generate a “nearby phone camera active” alert from those signals.
+
+A future opt-in **SpyGuard Companion Mode** can provide a limited cooperative signal:
+
+- The monitored Android phone must have SpyGuard Companion installed and explicitly paired/consented to.
+- The companion may observe its own device camera availability using Android camera APIs and publish a short-lived, authenticated “camera busy” event while permitted to run.
+- The receiving SpyGuard app can alert only that a paired companion reported camera-busy status. It must not claim that video is being recorded, identify the app using the camera, or infer malicious intent.
+- A camera-busy event is not recording proof; Android may make a camera unavailable for reasons other than recording.
+- Bluetooth/Wi-Fi disabled, background restrictions, permission revocation, battery optimisation, radio range, or companion termination can prevent delivery. No signal means **unknown**, not safe.
+- Pairing must use explicit consent, rotating identifiers, authenticated messages, minimal retention, and a visible stop-sharing control. No covert installation or monitoring is supported.
+
+This companion protocol is a roadmap item, not an implemented feature in v0.5.0. The dashboard explains this limitation so that normal nearby-device detections are not misrepresented as camera activity.
+
 ## Camera verification roadmap
 
 The current release is the first camera-inspection foundation, not the complete six-engine system.
