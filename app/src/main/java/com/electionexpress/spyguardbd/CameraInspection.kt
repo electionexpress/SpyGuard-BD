@@ -297,12 +297,12 @@ fun CameraInspectionScreen() {
                         savedReports = reportStore.list()
                         reportStatus = "রিপোর্টটি এই ডিভাইসের ব্যক্তিগত ইতিহাসে সংরক্ষিত হয়েছে"
                     } catch (error: Exception) {
-                        reportStatus = "ইতিহাসে সংরক্ষণ করা যায়নি: \${error.localizedMessage ?: "অজানা সমস্যা"}"
+                        reportStatus = "ইতিহাসে সংরক্ষণ করা যায়নি: ${error.localizedMessage ?: "অজানা সমস্যা"}"
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("ডিভাইসে রিপোর্ট ইতিহাসে সংরক্ষণ করুন") }
-            Text("সংরক্ষিত রিপোর্ট (\${savedReports.size})", color = Color.White, style = MaterialTheme.typography.titleSmall)
+            Text("সংরক্ষিত রিপোর্ট (${savedReports.size})", color = Color.White, style = MaterialTheme.typography.titleSmall)
             if (savedReports.isEmpty()) {
                 Text("এখনো কোনো রিপোর্ট ইতিহাসে সংরক্ষণ করা হয়নি।", color = CameraMuted, style = MaterialTheme.typography.bodySmall)
             } else {
