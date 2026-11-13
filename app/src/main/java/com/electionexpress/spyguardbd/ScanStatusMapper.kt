@@ -19,7 +19,7 @@ internal fun bluetoothCheckStatus(message: String): CheckStatus = when {
     message.contains("অনুমতি") -> CheckStatus.PERMISSION_DENIED
     message.contains("অনুপলব্ধ") || message.contains("BLE scanner নেই") || message.contains("Bluetooth বন্ধ") -> CheckStatus.UNAVAILABLE
     message.contains("স্ক্যান সম্পন্ন") -> CheckStatus.COMPLETED
-    message.contains("স্ক্যান চলছে") -> CheckStatus.RUNNING
+    message.contains("স্ক্যান চলছে") || message.contains("বিজ্ঞাপন পাওয়া গেছে") -> CheckStatus.RUNNING
     message.contains("স্ক্যান") && message.contains("কোড") -> CheckStatus.FAILED
     message.contains("সমস্যা") || message.contains("ব্যস্ত") || message.contains("অপেক্ষা করুন") -> CheckStatus.FAILED
     else -> CheckStatus.NOT_STARTED
