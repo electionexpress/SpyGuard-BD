@@ -39,7 +39,9 @@ To install:
 - [ ] Denying permissions produces a clear explanation and does not crash the app.
 - [ ] Wi-Fi scan with permission and Location services enabled shows available networks; empty results are not treated as proof that no devices exist.
 - [ ] BLE scan runs, accumulates multiple unique devices, and automatically stops after about 15 seconds.
+- [ ] On Android 12+, grant BLUETOOTH_SCAN and BLUETOOTH_CONNECT together; deny either permission and confirm the app explains why scanning cannot proceed.
 - [ ] BLE scan can be manually stopped and restarted.
+- [ ] Create a report after BLE observations and confirm each entry includes its signal strength, freshness label, and last-seen clock time; treat these as observations, not identity proof.
 - [ ] BLE observation freshness changes from live to recent to stale at the documented time thresholds; advertised names are not presented as verified device models.
 - [ ] Turning Bluetooth off produces a clear message.
 - [ ] Grant CAMERA permission and verify the CameraX back-camera preview starts; deny permission and verify the explanation is clear.
@@ -61,7 +63,7 @@ To install:
 
 - Automated image-based lens/glint candidate analysis with device-specific validation and false-positive evaluation.
 - Android privacy-dashboard guidance and a local sensor-use checklist.
-- Scan-result deduplication and linking user-selected Wi-Fi/BLE observations to a report.
+- User-selectable Wi-Fi/BLE observations and scan-session timestamps in reports.
 - Instrumentation tests and a documented physical-device test matrix.
 
 A green CI build confirms compilation and packaging, not the real-world accuracy of detection features. Each capability must be verified on physical devices.
