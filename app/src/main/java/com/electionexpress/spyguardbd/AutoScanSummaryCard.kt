@@ -33,6 +33,8 @@ import com.electionexpress.spyguardbd.autoscan.CheckStatus
 import com.electionexpress.spyguardbd.autoscan.EvidenceKind
 import com.electionexpress.spyguardbd.autoscan.ScanCheck
 import com.electionexpress.spyguardbd.autoscan.ScanVerdict
+import com.electionexpress.spyguardbd.wifiCheckStatus
+import com.electionexpress.spyguardbd.bluetoothCheckStatus
 
 private val ScanMint = Color(0xFF62E6C4)
 private val ScanTextMuted = Color(0xFFA9BEC5)
@@ -49,18 +51,8 @@ fun AutoScanSummaryCard(
 ) {
     val opticalCandidate = opticalInspection.lensLikeElement || opticalInspection.repeatableGlintFromMultipleAngles
 
-    val wifiStatus = when {
-        wifiState.contains("সম্পন্ন") || wifiState.contains("নেটওয়ার্ক") && wifiCount > 0 -> CheckStatus.COMPLETED
-        wifiState.contains("অনুমতি") -> CheckStatus.PERMISSION_DENIED
-        wifiState.contains("চলছে") -> CheckStatus.RUNNING
-        else -> CheckStatus.NOT_STARTED
-    }
-    val bluetoothStatus = when {
-        bluetoothState.contains("সম্পন্ন") || bluetoothCount > 0 -> CheckStatus.COMPLETED
-        bluetoothState.contains("অনুমতি") -> CheckStatus.PERMISSION_DENIED
-        bluetoothState.contains("চলছে") -> CheckStatus.RUNNING
-        else -> CheckStatus.NOT_STARTED
-    }
+    val wifiStatus = wifiCheckStatus(wifiState)
+    val bluetoothStatus = bluetoothCheckStatus(bluetoothState)
     val checks = listOf(
         ScanCheck("Wi-Fi", wifiStatus, wifiCount, wifiState, EvidenceKind.WIFI_NETWORK),
         ScanCheck("Bluetooth", bluetoothStatus, bluetoothCount, bluetoothState, EvidenceKind.BLUETOOTH_ADVERTISEMENT),
