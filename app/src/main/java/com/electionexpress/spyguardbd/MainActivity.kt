@@ -42,10 +42,10 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
 
-private val Bg = Color(0xFF07110F)
-private val Panel = Color(0xFF12201C)
-private val Mint = Color(0xFF53E0A0)
-private val Muted = Color(0xFFB8C9C2)
+private val Bg = Color(0xFF07151A)
+private val Panel = Color(0xFF10242B)
+private val Mint = Color(0xFF55E6C1)
+private val Muted = Color(0xFFAAC2C5)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -182,17 +182,59 @@ private fun SpyGuardApp() {
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(22.dp)) {
-                        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF102B2B)),
+                        shape = RoundedCornerShape(26.dp)
+                    ) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Security, null, tint = Mint)
-                                Text("  নিরাপত্তা ড্যাশবোর্ড", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Mint.copy(alpha = 0.14f)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Security,
+                                        contentDescription = null,
+                                        tint = Mint,
+                                        modifier = Modifier.padding(11.dp).size(26.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("SPYGUARD BD", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp)
+                                    Text("স্মার্ট স্পেস ইনস্পেকশন", color = Muted, fontSize = 12.sp)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(50),
+                                    color = Color(0xFF1C493C)
+                                ) {
+                                    Text("প্রস্তুত", color = Mint, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
+                                }
                             }
-                            Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL}", color = Muted)
-                            Text("Android ${Build.VERSION.RELEASE} • SpyGuard BD 0.2.1", color = Muted)
+                            Text("আপনার আশপাশ পরীক্ষা করুন", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                "ক্যামেরা পরিদর্শন ও দৃশ্যমান বেতার ডিভাইসের পর্যবেক্ষণ এক জায়গায়।",
+                                color = Muted, fontSize = 13.sp
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                DashboardMetric("Wi-Fi", wifiNetworks.size.toString(), Modifier.weight(1f))
+                                DashboardMetric("Bluetooth", bleDevices.size.toString(), Modifier.weight(1f))
+                                DashboardMetric("পরিদর্শন", "লাইভ", Modifier.weight(1f))
+                            }
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.10f))
+                            Text("ডিভাইস: ${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE}",
+                                color = Muted, fontSize = 11.sp)
                             Text(permissionState, color = Muted, fontSize = 12.sp)
-                            OutlinedButton(onClick = { permissionLauncher.launch(requiredPermissions) }) {
-                                Text("প্রয়োজনীয় অনুমতি যাচাই")
+                            OutlinedButton(
+                                onClick = { permissionLauncher.launch(requiredPermissions) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text("অনুমতি ও অ্যাক্সেস যাচাই")
                             }
                         }
                     }
@@ -300,6 +342,24 @@ private fun SpyGuardApp() {
                     }
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun DashboardMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = Color.White.copy(alpha = 0.055f),
+        shape = RoundedCornerShape(15.dp)
+    ) {
+        Column(
+            Modifier.padding(horizontal = 11.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = Muted, fontSize = 10.sp, maxLines = 1)
         }
     }
 }
