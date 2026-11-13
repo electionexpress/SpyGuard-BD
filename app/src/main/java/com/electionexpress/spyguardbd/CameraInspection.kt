@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -56,6 +58,7 @@ fun CameraInspectionScreen() {
     var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
+    var observations by remember { mutableStateOf(OpticalInspection()) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -75,7 +78,7 @@ fun CameraInspectionScreen() {
         ) {
             Text("লাইভ ক্যামেরা পরিদর্শন", color = Color.White, style = MaterialTheme.typography.titleLarge)
             Text(
-                "সন্দেহজনক বস্তু, ছোট লেন্সের মতো প্রতিফলন এবং অস্বাভাবিক আলো নিজে পর্যবেক্ষণ করুন। প্রতিফলন একা ক্যামেরার প্রমাণ নয়।",
+                "সন্দেহজনক বস্তু, ছোট লেন্সের মতো উপাদান এবং অস্বাভাবিক আলোর প্রতিফলন নিজে পর্যবেক্ষণ করুন। প্রতিফলন একা ক্যামেরার প্রমাণ নয়।",
                 color = CameraMuted,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -137,13 +140,44 @@ fun CameraInspectionScreen() {
 
             Text(cameraStatus, color = CameraMint, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(2.dp))
+
+            Text("অপটিক্যাল পর্যবেক্ষণ তালিকা", color = Color.White, style = MaterialTheme.typography.titleMedium)
             Text(
-                "পরিদর্শনের টিপস: ফোন ধীরে ধীরে ঘোরান, বিভিন্ন কোণ থেকে বস্তু দেখুন এবং একই বিন্দুতে আলোর প্রতিফলন পুনরায় যাচাই করুন।",
+                "নিজে দেখে পাওয়া বিষয়গুলো টিক দিন। এগুলো পর্যবেক্ষণের নোট—স্বয়ংক্রিয় ক্যামেরা শনাক্তকরণ বা ঝুঁকির স্কোর নয়।",
+                color = CameraMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
+            ObservationToggle("লেন্সের মতো গোল/কাচের উপাদান দেখা গেছে", observations.lensLikeElement) {
+                observations = observations.copy(lensLikeElement = it)
+            }
+            ObservationToggle("একাধিক কোণ থেকে দেখেও একই স্থানে ঝলক পুনরায় দেখা গেছে", observations.repeatableGlintFromMultipleAngles) {
+                observations = observations.copy(repeatableGlintFromMultipleAngles = it)
+            }
+            ObservationToggle("বস্তুতে বিদ্যুৎ বা ডেটা সংযোগের চিহ্ন দেখা গেছে", observations.visiblePowerOrDataConnection) {
+                observations = observations.copy(visiblePowerOrDataConnection = it)
+            }
+            ObservationToggle("অন্য আলো/কোণ বা দ্বিতীয়বার দেখে বিষয়টি পুনরায় যাচাই করেছি", observations.independentlyRechecked) {
+                observations = observations.copy(independentlyRechecked = it)
+            }
+
+            Text(
+                "${observations.recordedObservationCount}/4টি পর্যবেক্ষণ নথিভুক্ত",
+                color = CameraMint,
+                style = MaterialTheme.typography.labelLarge
+            )
+            Text(observations.guidance(), color = Color(0xFFFFD28A), style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(
+                onClick = { observations = OpticalInspection() },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("পর্যবেক্ষণ তালিকা রিসেট") }
+
+            Text(
+                "পরিদর্শনের টিপস: ফোন ধীরে ধীরে ঘোরান, বিভিন্ন কোণ থেকে বস্তু দেখুন এবং একই বিন্দুতে আলোর প্রতিফলন পুনরায় যাচাই করুন। অচেনা বৈদ্যুতিক বস্তু খুলবেন না বা স্পর্শ করবেন না।",
                 color = CameraMuted,
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
-                "এই সংস্করণে লাইভ প্রিভিউ ও ফ্ল্যাশ নিয়ন্ত্রণ আছে; স্বয়ংক্রিয় লেন্স শনাক্তকরণ বা AI শ্রেণিবিন্যাস এখনো যুক্ত হয়নি।",
+                "সীমাবদ্ধতা: এই সংস্করণে লাইভ প্রিভিউ, ফ্ল্যাশ নিয়ন্ত্রণ ও হাতে নথিভুক্ত পর্যবেক্ষণ আছে; স্বয়ংক্রিয় লেন্স শনাক্তকরণ বা AI শ্রেণিবিন্যাস নেই।",
                 color = Color(0xFFFFD28A),
                 style = MaterialTheme.typography.bodySmall
             )
@@ -157,5 +191,20 @@ fun CameraInspectionScreen() {
             camera = null
             provider = null
         }
+    }
+}
+
+@Composable
+private fun ObservationToggle(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Text(label, color = Color.White, style = MaterialTheme.typography.bodySmall)
     }
 }
