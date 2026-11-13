@@ -221,7 +221,8 @@ fun CameraInspectionScreen() {
             provider = null
             torchEnabled = false
         }
-    }}
+    }
+}
 
 @Composable
 private fun ObservationToggle(
