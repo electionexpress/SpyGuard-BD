@@ -97,13 +97,18 @@ private fun SpyGuardApp() {
             @SuppressLint("MissingPermission")
             override fun onReceive(ctx: Context?, intent: Intent?) {
                     try {
-                        wifiNetworks = wifi.scanResults
-                            .sortedByDescending { it.level }
-                            .take(30)
-                            .map { result ->
-                                val name = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" }
-                                "$name • ${result.frequency} MHz • ${result.level} dBm"
+                        wifiNetworks = deduplicateWifiObservations(
+                            wifi.scanResults.map { result ->
+                                WifiObservation(
+                                    ssid = result.SSID.ifBlank { "নামহীন নেটওয়ার্ক" },
+                                    bssid = result.BSSID.orEmpty(),
+                                    frequencyMhz = result.frequency,
+                                    rssiDbm = result.level
+                                )
                             }
+                        ).map { observation ->
+                            "${observation.ssid} • ${observation.frequencyMhz} MHz • ${observation.rssiDbm} dBm"
+                        }
                         wifiState = if (wifiNetworks.isEmpty()) "কোনো ফল পাওয়া যায়নি; Location চালু আছে কি না দেখুন" else "${wifiNetworks.size}টি দৃশ্যমান Wi-Fi নেটওয়ার্ক পাওয়া গেছে"
                     } catch (_: SecurityException) {
                         wifiState = "অনুমতি নেই — Location permission দিন"
