@@ -37,6 +37,27 @@ class InspectionReportTest {
         assertTrue(report.contains("এটি নিরাপদ হওয়ার প্রমাণ নয়"))
     }
     @Test
+    fun reportIncludesTimestampedRoomSweepWithoutClaimingCameraDetection() {
+        val sweep = OpticalSweepSession().record(
+            areaId = "ceiling",
+            result = OpticalSweepResult.POSSIBLE_REFLECTION,
+            observedAtMillis = 1_763_000_000_000L
+        )
+        val report = InspectionReport(
+            roomLabel = "Guest room",
+            observedAt = "2026-11-14 09:00:00",
+            observations = OpticalInspection(),
+            opticalSweep = sweep
+        ).toPlainText()
+
+        assertTrue(report.contains("নির্দেশিত রুম সুইপ (1/8 অংশ পরীক্ষা; 1টি পুনরায় যাচাই প্রয়োজন)"))
+        assertTrue(report.contains("সিলিং, লাইট ও স্মোক ডিটেক্টর"))
+        assertTrue(report.contains("সম্ভাব্য প্রতিফলন"))
+        assertTrue(report.contains("ক্যামেরার প্রমাণ নয়"))
+        assertTrue(report.contains("সময়:"))
+    }
+
+    @Test
     fun reportIncludesVisibleWirelessObservationsWithoutCallingThemCameras() {
         val report = InspectionReport(
             roomLabel = "Meeting room",
