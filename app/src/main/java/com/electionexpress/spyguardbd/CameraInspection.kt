@@ -70,6 +70,7 @@ fun CameraInspectionScreen(
     }
     var camera by remember { mutableStateOf<Camera?>(null) }
     var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var previewUseCase by remember { mutableStateOf<Preview?>(null) }
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
     var zoomRatio by remember { mutableStateOf(1f) }
@@ -138,7 +139,8 @@ fun CameraInspectionScreen(
                                     val preview = Preview.Builder().build().also {
                                         it.setSurfaceProvider(previewView.surfaceProvider)
                                     }
-                                    cameraProvider.unbindAll()
+                                    previewUseCase?.let { previousPreview -> cameraProvider.unbind(previousPreview) }
+                                    previewUseCase = preview
                                     camera = cameraProvider.bindToLifecycle(
                                         lifecycleOwner,
                                         CameraSelector.DEFAULT_BACK_CAMERA,
@@ -411,7 +413,8 @@ fun CameraInspectionScreen(
                     permissionGranted = granted
                     if (!granted) {
                         camera?.cameraControl?.enableTorch(false)
-                        provider?.unbindAll()
+                        provider?.let { cameraProvider -> previewUseCase?.let(cameraProvider::unbind) }
+            previewUseCase = null
                         camera = null
                         provider = null
                         torchEnabled = false
