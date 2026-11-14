@@ -1,5 +1,9 @@
 package com.electionexpress.spyguardbd
 
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 /**
  * A user-authored inspection note. It records observations only and never
  * represents them as an automated camera detection.
@@ -10,7 +14,8 @@ data class InspectionReport(
     val observations: OpticalInspection,
     val notes: String = "",
     val nearbyWifiNetworks: List<String> = emptyList(),
-    val nearbyBluetoothDevices: List<String> = emptyList()
+    val nearbyBluetoothDevices: List<String> = emptyList(),
+    val opticalSweep: OpticalSweepSession = OpticalSweepSession()
 ) {
     fun toPlainText(): String = buildString {
         appendLine("SpyGuard BD — Inspection Report")
@@ -23,6 +28,17 @@ data class InspectionReport(
         appendLine("- বিদ্যুৎ/ডেটা সংযোগের চিহ্ন: ${yesNo(observations.visiblePowerOrDataConnection)}")
         appendLine("- স্বাধীনভাবে পুনরায় যাচাই: ${yesNo(observations.independentlyRechecked)}")
         appendLine("পর্যবেক্ষণ নির্দেশনা: ${observations.guidance()}")
+        appendLine()
+        appendLine(
+            "নির্দেশিত রুম সুইপ (" + opticalSweep.checkedCount + "/" + opticalSweep.totalCount +
+                " অংশ পরীক্ষা; " + opticalSweep.followUpCount + "টি পুনরায় যাচাই প্রয়োজন):"
+        )
+        opticalSweep.orderedEntries.forEach { entry ->
+            val area = OpticalSweepCatalog.areas.first { it.id == entry.areaId }
+            val time = entry.observedAtMillis?.let { formatOpticalSweepTimestamp(it) } ?: "সময় নথিভুক্ত হয়নি"
+            appendLine("- " + area.title + ": " + entry.result.reportText + " (সময়: " + time + ")")
+        }
+        appendLine("রুম সুইপ হাতে করা পর্যবেক্ষণ; প্রতিফলন বা কোনো বস্তু একা ক্যামেরার প্রমাণ নয়।")
         appendLine()
         appendLine("স্ক্যানের সময় দৃশ্যমান Wi-Fi নেটওয়ার্ক (${nearbyWifiNetworks.size}):")
         if (nearbyWifiNetworks.isEmpty()) appendLine("- কোনো Wi-Fi ফলাফল সংযুক্ত করা হয়নি")
@@ -40,3 +56,6 @@ data class InspectionReport(
 
     private fun yesNo(value: Boolean): String = if (value) "হ্যাঁ" else "না"
 }
+
+private fun formatOpticalSweepTimestamp(timestampMillis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestampMillis))

@@ -10,6 +10,7 @@
 - **Bluetooth LE scan:** listens for nearby BLE advertisements, shows an advertised label, signal strength (RSSI), and an observation-freshness label. If an address is shown, only its validated first two octets are displayed; malformed addresses are fully hidden. Names and signal strength do not verify a device model, physical identity, or camera function. Scan automatically stops after 15 seconds.
 - **CameraX live preview:** user-authorized back-camera preview with explicit torch control where flash hardware is available, plus device-supported manual zoom controls.
 - **Optical observation checklist:** lets the user record lens-like elements, repeatable glints from multiple angles, visible power/data connections, and independent rechecks. These are manual observations, not automatic detections or a camera-risk score.
+- **Guided room sweep:** records a user-selected result for eight visible room areas, with a local timestamp for each update. “Nothing visible” is not a safety guarantee; reflections and objects needing review remain unconfirmed observations.
 - **Inspection report history:** creates user-authored plain-text reports with local timestamp, room label, checklist values, notes, and the currently visible Wi-Fi/BLE scan results. Users can share through Android's share sheet, export a `.txt` file through the document picker, or explicitly save a copy in app-private local history and later share/delete it. History is not uploaded or synced. Wireless entries are observations only, not camera identification.
 - **IR inspection guide:** explains a manual camera-based check. It does not automatically prove that a light source is an infrared camera.
 - **Permission status:** requests runtime permissions only when needed.
@@ -54,6 +55,9 @@ To install:
 - [ ] Verify torch control only enables when the device has flash hardware; leave the screen and confirm the torch turns off.
 - [ ] Verify preview zoom controls respect the device-reported minimum and maximum zoom ratios; confirm unsupported zoom ranges remain safely disabled.
 - [ ] Test each optical observation checkbox and reset; confirm the app never labels observations as a confirmed camera.
+- [ ] Complete the guided room sweep and confirm each area can be marked not checked, no visible candidate, possible reflection, or needs manual recheck.
+- [ ] Change a room-sweep result twice and confirm its timestamp updates; reset the sweep and confirm all areas return to not checked.
+- [ ] Save/share a report and verify each room area, selected result, and local observation time are included; confirm “no visible candidate” is not described as a safe room and a reflection is not called a camera.
 - [ ] Create a report with a room label and notes; verify timestamp and checklist values, then share only to a destination selected by the user.
 - [ ] Create a report with blank optional fields; verify the report clearly labels them as unspecified and does not claim a camera was detected.
 - [ ] Save a report as `.txt` through Android's document picker; verify the selected destination contains the UTF-8 report and cancelling does not create a file.

@@ -11,6 +11,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -63,10 +66,12 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
     }
     var camera by remember { mutableStateOf<Camera?>(null) }
     var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var previewUseCase by remember { mutableStateOf<Preview?>(null) }
     var cameraStatus by remember { mutableStateOf("ক্যামেরা ব্যবহারের অনুমতি প্রয়োজন") }
     var torchEnabled by remember { mutableStateOf(false) }
     var zoomRatio by remember { mutableStateOf(1f) }
     var observations by remember { mutableStateOf(OpticalInspection()) }
+    var opticalSweep by remember { mutableStateOf(OpticalSweepSession()) }
     var roomLabel by remember { mutableStateOf("") }
     var reportNotes by remember { mutableStateOf("") }
     var pendingReportText by remember { mutableStateOf("") }
@@ -129,16 +134,18 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                                     if (!screenActive || ContextCompat.checkSelfPermission(viewContext, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return@addListener
                                     val cameraProvider = providerFuture.get()
                                     provider = cameraProvider
+                                    previewUseCase?.let { existingPreview -> cameraProvider.unbind(existingPreview) }
                                     val preview = Preview.Builder().build().also {
                                         it.setSurfaceProvider(previewView.surfaceProvider)
                                     }
-                                    cameraProvider.unbindAll()
-                                    camera = cameraProvider.bindToLifecycle(
+                                    val boundCamera = cameraProvider.bindToLifecycle(
                                         lifecycleOwner,
                                         CameraSelector.DEFAULT_BACK_CAMERA,
                                         preview
                                     )
-                                    zoomRatio = camera?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
+                                    previewUseCase = preview
+                                    camera = boundCamera
+                                    zoomRatio = boundCamera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
                                     cameraStatus = "লাইভ প্রিভিউ চালু"
                                 } catch (error: Exception) {
                                     cameraStatus = "ক্যামেরা চালু করা যায়নি: ${error.localizedMessage ?: "অজানা সমস্যা"}"
@@ -246,6 +253,32 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                 modifier = Modifier.fillMaxWidth()
             ) { Text("পর্যবেক্ষণ তালিকা রিসেট") }
 
+            Text("02  •  ধাপে ধাপে রুম সুইপ", color = CameraMint, style = MaterialTheme.typography.titleMedium)
+            Text(
+                "প্রতিটি অংশ দেখার পর ফল নির্বাচন করুন। ‘চোখে পড়েনি’ মানে শুধু এই অংশে দৃশ্যমান কিছু নথিভুক্ত হয়নি—এটি ঘর নিরাপদ হওয়ার নিশ্চয়তা নয়।",
+                color = CameraMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                opticalSweep.checkedCount.toString() + "/" + opticalSweep.totalCount.toString() +
+                    " অংশ পরীক্ষা • " + opticalSweep.followUpCount.toString() + "টি পুনরায় যাচাই প্রয়োজন",
+                color = CameraMint,
+                style = MaterialTheme.typography.labelLarge
+            )
+            OpticalSweepCatalog.areas.forEach { area ->
+                OpticalSweepAreaCard(
+                    area = area,
+                    entry = opticalSweep.entryFor(area.id),
+                    onResultChange = { result ->
+                        opticalSweep = opticalSweep.record(area.id, result, System.currentTimeMillis())
+                    }
+                )
+            }
+            OutlinedButton(
+                onClick = { opticalSweep = OpticalSweepSession() },
+                modifier = Modifier.fillMaxWidth()
+            ) { Text("রুম সুইপ রিসেট") }
+
             Text(
                 "সর্বশেষ স্ক্যানের ফল: Wi-Fi ${nearbyWifiNetworks.size}টি • Bluetooth LE ${nearbyBluetoothDevices.size}টি",
                 color = CameraMint,
@@ -274,6 +307,7 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                         observedAt = timestamp,
                         observations = observations,
                         notes = reportNotes,
+                        opticalSweep = opticalSweep,
                         nearbyWifiNetworks = nearbyWifiNetworks,
                         nearbyBluetoothDevices = nearbyBluetoothDevices
                     )
@@ -293,6 +327,7 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                         observedAt = timestamp,
                         observations = observations,
                         notes = reportNotes,
+                        opticalSweep = opticalSweep,
                         nearbyWifiNetworks = nearbyWifiNetworks,
                         nearbyBluetoothDevices = nearbyBluetoothDevices
                     ).toPlainText()
@@ -314,6 +349,7 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                             observedAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
                             observations = observations,
                             notes = reportNotes,
+                            opticalSweep = opticalSweep,
                         nearbyWifiNetworks = nearbyWifiNetworks,
                         nearbyBluetoothDevices = nearbyBluetoothDevices
                         )
@@ -398,10 +434,12 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
                     permissionGranted = granted
                     if (!granted) {
                         camera?.cameraControl?.enableTorch(false)
-                        provider?.unbindAll()
+                        previewUseCase?.let { preview -> provider?.unbind(preview) }
+                        previewUseCase = null
                         camera = null
                         provider = null
                         torchEnabled = false
+                        zoomRatio = 1f
                         cameraStatus = "ক্যামেরা অনুমতি আর সক্রিয় নেই"
                     }
                 }
@@ -413,10 +451,12 @@ fun CameraInspectionScreen(nearbyWifiNetworks: List<String> = emptyList(), nearb
             screenActive = false
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             camera?.cameraControl?.enableTorch(false)
-            provider?.unbindAll()
+            previewUseCase?.let { preview -> provider?.unbind(preview) }
+            previewUseCase = null
             camera = null
             provider = null
             torchEnabled = false
+            zoomRatio = 1f
         }
     }
 }
@@ -438,6 +478,60 @@ private fun ObservationToggle(
         ) {
             Checkbox(checked = checked, onCheckedChange = onCheckedChange)
             Text(label, color = Color.White, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun OpticalSweepAreaCard(
+    area: OpticalSweepArea,
+    entry: OpticalSweepEntry,
+    onResultChange: (OpticalSweepResult) -> Unit
+) {
+    var menuExpanded by remember(area.id) { mutableStateOf(false) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A3029)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(area.title, color = Color.White, style = MaterialTheme.typography.titleSmall)
+            Text(area.guidance, color = CameraMuted, style = MaterialTheme.typography.bodySmall)
+            Text(
+                entry.result.displayLabel,
+                color = if (entry.result.needsFollowUp) Color(0xFFFFD28A) else CameraMint,
+                style = MaterialTheme.typography.labelLarge
+            )
+            entry.observedAtMillis?.let { timestamp ->
+                Text(
+                    "নথিভুক্ত: " + SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(timestamp)),
+                    color = CameraMuted,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+            Box {
+                OutlinedButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("পরিদর্শনের ফল নির্বাচন করুন") }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    OpticalSweepResult.values().forEach { result ->
+                        DropdownMenuItem(
+                            text = { Text(result.displayLabel) },
+                            onClick = {
+                                onResultChange(result)
+                                menuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
