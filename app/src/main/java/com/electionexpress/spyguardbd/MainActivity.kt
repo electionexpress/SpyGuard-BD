@@ -25,12 +25,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Wifi
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val Bg = Color(0xFF07151A)
 private val Panel = Color(0xFF10242B)
@@ -195,6 +198,63 @@ private fun SpyGuardApp() {
         }
     }
 
+    // Request only the permissions needed for nearby-device scanning on first launch.
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(requiredPermissions)
+    }
+
+    // Once the user grants access, start a bounded Wi-Fi + BLE scan automatically.
+    LaunchedEffect(permissionState) {
+        if (permissionState == "প্রয়োজনীয় অনুমতি দেওয়া হয়েছে") {
+            if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                wifi.isWifiEnabled && isLocationServiceEnabled(context)
+            ) {
+                try {
+                    wifi.startScan()
+                    wifiState = "স্বয়ংক্রিয় Wi-Fi স্ক্যান চলছে"
+                } catch (_: SecurityException) {
+                    wifiState = "Wi-Fi স্ক্যানের অনুমতি নেই"
+                } catch (_: Exception) {
+                    wifiState = "Wi-Fi স্ক্যান শুরু করা যায়নি"
+                }
+            } else {
+                wifiState = "Wi-Fi/Location অনুপলব্ধ — এই অংশ পরীক্ষা করা যায়নি"
+            }
+
+            val scanPermissionsGranted = if (Build.VERSION.SDK_INT >= 31) {
+                hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
+                    hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            } else {
+                hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            if (scanPermissionsGranted && bluetoothAdapter?.isEnabled == true) {
+                try {
+                    val scanner = bluetoothAdapter.bluetoothLeScanner
+                    if (scanner != null && !isBleScanning) {
+                        bleDevices.clear()
+                        scanner.startScan(bleCallback)
+                        isBleScanning = true
+                        bleState = "স্বয়ংক্রিয় BLE স্ক্যান চলছে — ১৫ সেকেন্ডের মধ্যে বন্ধ হবে"
+                    } else if (scanner == null) {
+                        bleState = "এই ফোনে BLE scanner নেই"
+                    }
+                } catch (_: SecurityException) {
+                    bleState = "Bluetooth স্ক্যানের অনুমতি নেই"
+                } catch (_: Exception) {
+                    bleState = "Bluetooth স্ক্যান শুরু করা যায়নি"
+                }
+            } else {
+                bleState = "Bluetooth বন্ধ/অনুপলব্ধ বা অনুমতি নেই"
+            }
+        }
+    }
+
+    val dashboardListState = rememberLazyListState()
+    val dashboardScope = rememberCoroutineScope()
+    var selectedDestination by remember { mutableIntStateOf(0) }
+    var opticalInspection by remember { mutableStateOf(OpticalInspection()) }
+    var opticalInspectionCompleted by remember { mutableStateOf(false) }
+
     MaterialTheme(colorScheme = darkColorScheme(primary = Mint, background = Bg, surface = Panel)) {
         Scaffold(containerColor = Bg, topBar = {
             TopAppBar(
@@ -206,10 +266,39 @@ private fun SpyGuardApp() {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Bg)
             )
+        }, bottomBar = {
+            NavigationBar(containerColor = Color(0xFF0B1D23), contentColor = Mint) {
+                val destinations = listOf(
+                    Triple("হোম", Icons.Default.Home, 0),
+                    Triple("ক্যামেরা", Icons.Default.CameraAlt, 2),
+                    Triple("ডিভাইস", Icons.Default.Radar, 4),
+                    Triple("প্রাইভেসি", Icons.Default.Info, 6)
+                )
+                destinations.forEachIndexed { index, destination ->
+                    NavigationBarItem(
+                        selected = selectedDestination == index,
+                        onClick = {
+                            selectedDestination = index
+                            dashboardScope.launch { dashboardListState.animateScrollToItem(destination.third) }
+                        },
+                        icon = { Icon(destination.second, contentDescription = destination.first) },
+                        label = { Text(destination.first, fontSize = 10.sp) },
+                        alwaysShowLabel = true,
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Mint,
+                            selectedTextColor = Mint,
+                            indicatorColor = Mint.copy(alpha = 0.13f),
+                            unselectedIconColor = Muted,
+                            unselectedTextColor = Muted
+                        )
+                    )
+                }
+            }
         }) { padding ->
             LazyColumn(
+                state = dashboardListState,
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(18.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 22.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 item {
@@ -270,9 +359,27 @@ private fun SpyGuardApp() {
                         }
                     }
                 }
-                item { CameraInspectionScreen(nearbyWifiNetworks = wifiNetworks, nearbyBluetoothDevices = bleDevices.values.map { observation ->
-                    "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
-                }) }
+                item {
+                    AutoScanSummaryCard(
+                        wifiState = wifiState,
+                        wifiCount = wifiNetworks.size,
+                        bluetoothState = bleState,
+                        bluetoothCount = bleDevices.size,
+                        opticalInspection = opticalInspection,
+                        opticalInspectionCompleted = opticalInspectionCompleted
+                    )
+                }
+                item { CameraInspectionScreen(
+                    nearbyWifiNetworks = wifiNetworks,
+                    nearbyBluetoothDevices = bleDevices.values.map { observation ->
+                        "${observation.displayName} • ${observation.rssiDbm} dBm • ${bleFreshnessLabel(classifyBleFreshness(observation.lastSeenAtMillis, System.currentTimeMillis()))} • ${formatBleLastSeen(observation.lastSeenAtMillis)}"
+                    },
+                    observations = opticalInspection,
+                    onObservationsChange = { opticalInspection = it },
+                    inspectionCompleted = opticalInspectionCompleted,
+                    onInspectionCompletedChange = { opticalInspectionCompleted = it }
+                ) }
+                item { SensorDiagnosticsScreen() }
                 item {
                     SectionCard(
                         title = "Wi-Fi নেটওয়ার্ক স্ক্যান",
