@@ -414,7 +414,7 @@ fun CameraInspectionScreen(
                     if (!granted) {
                         camera?.cameraControl?.enableTorch(false)
                         provider?.let { cameraProvider -> previewUseCase?.let(cameraProvider::unbind) }
-            previewUseCase = null
+                        previewUseCase = null
                         camera = null
                         provider = null
                         torchEnabled = false
@@ -429,7 +429,8 @@ fun CameraInspectionScreen(
             screenActive = false
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             camera?.cameraControl?.enableTorch(false)
-            provider?.unbindAll()
+            provider?.let { cameraProvider -> previewUseCase?.let(cameraProvider::unbind) }
+            previewUseCase = null
             camera = null
             provider = null
             torchEnabled = false
