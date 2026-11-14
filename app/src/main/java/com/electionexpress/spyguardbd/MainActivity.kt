@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Wifi
@@ -268,10 +269,10 @@ private fun SpyGuardApp() {
         }, bottomBar = {
             NavigationBar(containerColor = Color(0xFF0B1D23), contentColor = Mint) {
                 val destinations = listOf(
-                    Triple("হোম", "⌂", 0),
-                    Triple("ক্যামেরা", "◉", 2),
-                    Triple("ডিভাইস", "⌁", 4),
-                    Triple("প্রাইভেসি", "▣", 6)
+                    Triple("হোম", Icons.Default.Home, 0),
+                    Triple("ক্যামেরা", Icons.Default.CameraAlt, 2),
+                    Triple("ডিভাইস", Icons.Default.Radar, 4),
+                    Triple("প্রাইভেসি", Icons.Default.Info, 6)
                 )
                 destinations.forEachIndexed { index, destination ->
                     NavigationBarItem(
@@ -280,7 +281,7 @@ private fun SpyGuardApp() {
                             selectedDestination = index
                             dashboardScope.launch { dashboardListState.animateScrollToItem(destination.third) }
                         },
-                        icon = { Text(destination.second, fontSize = 19.sp, fontWeight = FontWeight.Bold) },
+                        icon = { Icon(destination.second, contentDescription = destination.first) },
                         label = { Text(destination.first, fontSize = 10.sp) },
                         alwaysShowLabel = true,
                         colors = NavigationBarItemDefaults.colors(
